@@ -1,0 +1,50 @@
+{
+    "title": "maintenance_records",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "vehicle_id": {
+            "type": "integer",
+            "description": "ID du véhicule concerné"
+        },
+        "vehicle_fleet_id": {
+            "type": "string",
+            "description": "ID flotte du véhicule pour référence rapide"
+        },
+        "type": {
+            "type": "string",
+            "description": "Type: routine, battery, tires, brakes, body, other"
+        },
+        "description": {
+            "type": "string",
+            "description": "Description de la maintenance"
+        },
+        "status": {
+            "type": "string",
+            "description": "Status: scheduled, in_progress, completed"
+        },
+        "scheduled_date": {
+            "type": "string",
+            "description": "Date prévue"
+        },
+        "completed_date": {
+            "type": "string",
+            "description": "Date de fin"
+        },
+        "cost": {
+            "type": "integer",
+            "description": "Coût en FCFA"
+        },
+        "notes": {
+            "type": "string",
+            "description": "Notes supplémentaires"
+        }
+    },
+    "required": [
+        "vehicle_id",
+        "type",
+        "status"
+    ]
+}

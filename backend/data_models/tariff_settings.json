@@ -1,0 +1,67 @@
+{
+    "title": "tariff_settings",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "name": {
+            "type": "string"
+        },
+        "base_fare": {
+            "type": "integer",
+            "default": 500
+        },
+        "price_per_km": {
+            "type": "integer",
+            "default": 350
+        },
+        "price_per_min": {
+            "type": "integer",
+            "default": 50
+        },
+        "minimum_fare": {
+            "type": "integer",
+            "default": 1000
+        },
+        "airport_surcharge": {
+            "type": "integer",
+            "default": 2000
+        },
+        "night_multiplier": {
+            "type": "number",
+            "default": 1.5
+        },
+        "night_start_hour": {
+            "type": "integer",
+            "default": 22
+        },
+        "night_end_hour": {
+            "type": "integer",
+            "default": 6
+        },
+        "co2_saved_per_km": {
+            "type": "number",
+            "default": 120
+        },
+        "daily_target": {
+            "type": "integer",
+            "default": 30000
+        },
+        "alert_threshold_percent": {
+            "type": "integer",
+            "default": 85
+        },
+        "zone": {
+            "type": "string",
+            "default": "douala"
+        },
+        "is_active": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "required": [
+        "name"
+    ]
+}

@@ -1,0 +1,50 @@
+{
+    "title": "device_registry",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Auto-increment primary key"
+        },
+        "device_fingerprint": {
+            "type": "string",
+            "description": "Unique device fingerprint hash"
+        },
+        "passenger_id": {
+            "type": "integer",
+            "description": "Passenger record ID"
+        },
+        "has_debt_flag": {
+            "type": "boolean",
+            "description": "Whether this device has an associated unpaid debt",
+            "default": false
+        },
+        "debt_amount_at_register": {
+            "type": "integer",
+            "description": "Debt amount when device was last registered",
+            "default": 0
+        },
+        "install_count": {
+            "type": "integer",
+            "description": "Number of times app was installed on this device",
+            "default": 1
+        },
+        "last_seen_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last time this device was seen"
+        },
+        "is_blocked": {
+            "type": "boolean",
+            "description": "Whether this device is blocked from creating new accounts",
+            "default": false
+        },
+        "block_reason": {
+            "type": "string",
+            "description": "Reason for blocking this device"
+        }
+    },
+    "required": [
+        "device_fingerprint"
+    ]
+}

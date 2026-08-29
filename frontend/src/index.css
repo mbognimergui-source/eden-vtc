@@ -1,0 +1,278 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 195 15% 97%;
+    --foreground: 195 50% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 195 50% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 195 50% 15%;
+
+    --primary: 195 50% 25%;
+    --primary-foreground: 45 10% 95%;
+
+    --secondary: 45 65% 47%;
+    --secondary-foreground: 195 50% 10%;
+
+    --muted: 195 10% 93%;
+    --muted-foreground: 195 15% 45%;
+
+    --accent: 45 65% 47%;
+    --accent-foreground: 195 50% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 195 15% 88%;
+    --input: 195 15% 88%;
+    --ring: 195 50% 25%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 195 50% 20%;
+    --sidebar-foreground: 195 10% 92%;
+    --sidebar-primary: 45 65% 47%;
+    --sidebar-primary-foreground: 195 50% 10%;
+    --sidebar-accent: 195 45% 28%;
+    --sidebar-accent-foreground: 195 10% 92%;
+    --sidebar-border: 195 40% 30%;
+    --sidebar-ring: 45 65% 47%;
+  }
+
+  .dark {
+    --background: 195 50% 8%;
+    --foreground: 195 10% 92%;
+
+    --card: 195 45% 12%;
+    --card-foreground: 195 10% 92%;
+
+    --popover: 195 45% 12%;
+    --popover-foreground: 195 10% 92%;
+
+    --primary: 45 65% 47%;
+    --primary-foreground: 195 50% 10%;
+
+    --secondary: 195 40% 20%;
+    --secondary-foreground: 195 10% 92%;
+
+    --muted: 195 35% 16%;
+    --muted-foreground: 195 10% 60%;
+
+    --accent: 45 65% 47%;
+    --accent-foreground: 195 50% 10%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 195 35% 18%;
+    --input: 195 35% 18%;
+    --ring: 45 65% 47%;
+
+    --sidebar-background: 195 50% 6%;
+    --sidebar-foreground: 195 10% 92%;
+    --sidebar-primary: 45 65% 47%;
+    --sidebar-primary-foreground: 195 50% 10%;
+    --sidebar-accent: 195 45% 14%;
+    --sidebar-accent-foreground: 195 10% 92%;
+    --sidebar-border: 195 40% 14%;
+    --sidebar-ring: 45 65% 47%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1 {
+    @apply text-3xl font-bold tracking-tight;
+  }
+  h2 {
+    @apply text-2xl font-semibold;
+  }
+  h3 {
+    @apply text-xl font-semibold;
+  }
+}
+
+@layer utilities {
+  .eden-gradient {
+    background: linear-gradient(135deg, hsl(195, 50%, 25%) 0%, hsl(195, 45%, 35%) 100%);
+  }
+  .eden-gold {
+    color: hsl(45, 65%, 47%);
+  }
+  .eden-card {
+    @apply bg-card rounded-xl border shadow-sm;
+  }
+}
+
+/* Smooth page transitions */
+@layer utilities {
+  .page-enter {
+    animation: pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .slide-up-enter {
+    animation: slideUpEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .fade-scale-in {
+    animation: fadeScaleIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUpEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Pulse animation for live indicators */
+@keyframes livePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
+
+.live-pulse {
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+/* Card hover effects */
+.card-interactive {
+  @apply transition-all duration-300 ease-out;
+}
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(31, 78, 95, 0.12);
+}
+.card-interactive:active {
+  transform: translateY(0);
+}
+
+/* Button press effect */
+.btn-press {
+  @apply transition-transform duration-150 active:scale-[0.97];
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Bottom nav safe area */
+.pb-bottom-nav {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 0.5rem);
+}
+
+/* Skeleton loading animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, hsl(195, 10%, 93%) 25%, hsl(195, 10%, 97%) 50%, hsl(195, 10%, 93%) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Status indicator dot */
+.status-dot {
+  @apply w-2 h-2 rounded-full;
+  box-shadow: 0 0 0 2px hsl(195, 15%, 97%);
+}
+.status-dot-online {
+  @apply bg-emerald-500;
+  box-shadow: 0 0 0 2px hsl(195, 15%, 97%), 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+/* Progress bar animation */
+@keyframes progressFill {
+  from { width: 0; }
+}
+.progress-animated {
+  animation: progressFill 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Number counter animation */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.count-up {
+  animation: countUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Floating label input style */
+.input-enhanced {
+  @apply rounded-xl border-2 border-transparent bg-muted/50 px-4 py-3 text-sm transition-all duration-200;
+}
+.input-enhanced:focus {
+  @apply border-[hsl(195,50%,25%)] bg-white shadow-sm ring-0;
+}
+.input-enhanced::placeholder {
+  @apply text-muted-foreground/60;
+}

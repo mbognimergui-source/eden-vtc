@@ -1,0 +1,38 @@
+{
+    "title": "user_roles",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Auto-increment primary key"
+        },
+        "user_id": {
+            "type": "string",
+            "description": "Reference to the authenticated user"
+        },
+        "role": {
+            "type": "string",
+            "description": "User role: passenger, driver, or admin",
+            "default": "passenger"
+        },
+        "is_active": {
+            "type": "boolean",
+            "description": "Whether this role assignment is active",
+            "default": true
+        },
+        "granted_by": {
+            "type": "string",
+            "description": "User ID of the admin who granted this role",
+            "default": ""
+        },
+        "permissions": {
+            "type": "string",
+            "description": "JSON string of specific permissions for this role",
+            "default": "{}"
+        }
+    },
+    "required": [
+        "user_id",
+        "role"
+    ]
+}

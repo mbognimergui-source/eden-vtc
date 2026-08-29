@@ -1,0 +1,49 @@
+{
+    "title": "phone_otp_requests",
+    "type": "object",
+    "description": "Codes OTP SMS envoyes pour la connexion par telephone",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Identifiant auto-incremente"
+        },
+        "phone": {
+            "type": "string",
+            "description": "Numero au format E.164, ex +237612345678"
+        },
+        "code_hash": {
+            "type": "string",
+            "description": "Hash SHA-256 du code OTP, jamais le code en clair"
+        },
+        "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Expiration du code"
+        },
+        "attempts": {
+            "type": "integer",
+            "description": "Nombre de tentatives de validation echouees"
+        },
+        "consumed": {
+            "type": "boolean",
+            "description": "Code deja utilise, usage unique"
+        },
+        "request_ip": {
+            "type": "string",
+            "description": "IP ayant demande l envoi"
+        },
+        "delivery_status": {
+            "type": "string",
+            "description": "sent, failed ou dev_bypass"
+        },
+        "channel": {
+            "type": "string",
+            "description": "Canal d envoi du code : sms ou whatsapp"
+        }
+    },
+    "required": [
+        "phone",
+        "code_hash",
+        "expires_at"
+    ]
+}

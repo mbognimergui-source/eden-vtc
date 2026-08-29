@@ -1,0 +1,35 @@
+{
+    "title": "company_accounts",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "account_type": {
+            "type": "string",
+            "enum": [
+                "encours",
+                "caisse"
+            ],
+            "description": "Type de compte: encours (soldes wallets clients) ou caisse (recettes validées)"
+        },
+        "balance": {
+            "type": "integer",
+            "default": 0,
+            "description": "Solde du compte en FCFA"
+        },
+        "label": {
+            "type": "string",
+            "description": "Libellé du compte"
+        },
+        "last_updated_reason": {
+            "type": "string",
+            "description": "Raison de la dernière mise à jour"
+        }
+    },
+    "required": [
+        "account_type",
+        "balance",
+        "label"
+    ]
+}

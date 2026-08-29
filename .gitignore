@@ -1,0 +1,30 @@
+# Backend (Python)
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.log
+backend/backend_stdout.log
+backend/backend_stderr.log
+backend/logs/
+backend/.env
+backend/*.db
+backend/*.db-journal
+backend/eden_vtc_dev.db
+
+# Frontend (Node)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.log
+npm-debug.log*
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.env
+.env.local
+.env.*.local

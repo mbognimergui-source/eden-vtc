@@ -1,0 +1,52 @@
+{
+    "title": "vehicle_positions",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Auto-increment primary key"
+        },
+        "vehicle_id": {
+            "type": "integer",
+            "description": "ID du véhicule dans la table vehicles"
+        },
+        "latitude": {
+            "type": "number",
+            "description": "Latitude GPS du véhicule"
+        },
+        "longitude": {
+            "type": "number",
+            "description": "Longitude GPS du véhicule"
+        },
+        "speed": {
+            "type": "number",
+            "description": "Vitesse en km/h"
+        },
+        "heading": {
+            "type": "number",
+            "description": "Cap en degrés (0-360)"
+        },
+        "accuracy": {
+            "type": "number",
+            "description": "Précision GPS en mètres"
+        },
+        "status": {
+            "type": "string",
+            "description": "Statut: moving, idle, parked, offline"
+        },
+        "ride_id": {
+            "type": "integer",
+            "description": "ID de la course en cours (null si pas en course)"
+        },
+        "driver_id": {
+            "type": "integer",
+            "description": "ID du chauffeur actuel"
+        }
+    },
+    "required": [
+        "id",
+        "vehicle_id",
+        "latitude",
+        "longitude"
+    ]
+}

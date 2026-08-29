@@ -1,0 +1,50 @@
+[
+    {
+        "first_name": "Jean-Paul",
+        "last_name": "Mbarga",
+        "phone": "+237690123456",
+        "status": "online",
+        "vehicle_id": 1,
+        "license_number": "DL-CM-2024-001",
+        "rating": 4.8,
+        "total_rides": 245,
+        "daily_earnings": 28000,
+        "zone": "douala"
+    },
+    {
+        "first_name": "Samuel",
+        "last_name": "Nkoulou",
+        "phone": "+237691234567",
+        "status": "on_ride",
+        "vehicle_id": 3,
+        "license_number": "DL-CM-2024-002",
+        "rating": 4.6,
+        "total_rides": 189,
+        "daily_earnings": 32000,
+        "zone": "douala"
+    },
+    {
+        "first_name": "Pierre",
+        "last_name": "Eto'o",
+        "phone": "+237692345678",
+        "status": "online",
+        "vehicle_id": 2,
+        "license_number": "DL-CM-2024-003",
+        "rating": 4.9,
+        "total_rides": 312,
+        "daily_earnings": 25000,
+        "zone": "douala"
+    },
+    {
+        "first_name": "Marie",
+        "last_name": "Fotso",
+        "phone": "+237693456789",
+        "status": "offline",
+        "vehicle_id": 4,
+        "license_number": "DL-CM-2024-004",
+        "rating": 4.7,
+        "total_rides": 156,
+        "daily_earnings": 0,
+        "zone": "douala"
+    }
+]

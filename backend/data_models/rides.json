@@ -1,0 +1,105 @@
+{
+    "title": "rides",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "passenger_id": {
+            "type": "integer"
+        },
+        "driver_id": {
+            "type": "integer"
+        },
+        "vehicle_id": {
+            "type": "integer"
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "accepted",
+                "in_progress",
+                "completed",
+                "cancelled"
+            ],
+            "default": "pending"
+        },
+        "pickup_address": {
+            "type": "string"
+        },
+        "pickup_lat": {
+            "type": "number"
+        },
+        "pickup_lng": {
+            "type": "number"
+        },
+        "destination_address": {
+            "type": "string"
+        },
+        "destination_lat": {
+            "type": "number"
+        },
+        "destination_lng": {
+            "type": "number"
+        },
+        "distance_km": {
+            "type": "number"
+        },
+        "duration_min": {
+            "type": "integer"
+        },
+        "estimated_price": {
+            "type": "integer"
+        },
+        "final_price": {
+            "type": "integer"
+        },
+        "payment_method": {
+            "type": "string",
+            "enum": [
+                "cash",
+                "orange_money",
+                "mtn_momo",
+                "wallet"
+            ],
+            "default": "wallet"
+        },
+        "payment_status": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "paid",
+                "debt"
+            ],
+            "default": "pending"
+        },
+        "rating": {
+            "type": "integer"
+        },
+        "comment": {
+            "type": "string"
+        },
+        "is_scheduled": {
+            "type": "boolean",
+            "default": false
+        },
+        "scheduled_at": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "km_start": {
+            "type": "integer"
+        },
+        "km_end": {
+            "type": "integer"
+        },
+        "co2_saved": {
+            "type": "number"
+        }
+    },
+    "required": [
+        "pickup_address",
+        "destination_address"
+    ]
+}

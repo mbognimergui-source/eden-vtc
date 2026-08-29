@@ -1,0 +1,51 @@
+{
+    "title": "saved_addresses",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Auto-increment primary key"
+        },
+        "user_id": {
+            "type": "string",
+            "description": "User ID who saved this address"
+        },
+        "label": {
+            "type": "string",
+            "description": "Label for the address (e.g. Maison, Bureau, Maman)"
+        },
+        "address": {
+            "type": "string",
+            "description": "Full address text"
+        },
+        "lat": {
+            "type": "number",
+            "description": "Latitude coordinate"
+        },
+        "lng": {
+            "type": "number",
+            "description": "Longitude coordinate"
+        },
+        "icon": {
+            "type": "string",
+            "description": "Icon identifier (home, work, star, heart, etc.)"
+        },
+        "is_default": {
+            "type": "boolean",
+            "description": "Whether this is the default address",
+            "default": false
+        },
+        "use_count": {
+            "type": "integer",
+            "description": "Number of times this address was used",
+            "default": 0
+        }
+    },
+    "required": [
+        "user_id",
+        "label",
+        "address",
+        "lat",
+        "lng"
+    ]
+}

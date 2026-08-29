@@ -1,0 +1,41 @@
+{
+    "title": "recharges",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "driver_id": {
+            "type": "integer"
+        },
+        "vehicle_id": {
+            "type": "integer"
+        },
+        "station": {
+            "type": "string"
+        },
+        "kwh": {
+            "type": "number"
+        },
+        "price_per_kwh": {
+            "type": "number",
+            "default": 106
+        },
+        "total_cost": {
+            "type": "integer"
+        },
+        "km_counter": {
+            "type": "integer"
+        },
+        "date": {
+            "type": "string",
+            "format": "date"
+        }
+    },
+    "required": [
+        "vehicle_id",
+        "station",
+        "kwh",
+        "total_cost"
+    ]
+}

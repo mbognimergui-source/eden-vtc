@@ -1,0 +1,18 @@
+[
+    {
+        "name": "Standard Douala",
+        "base_fare": 500,
+        "price_per_km": 350,
+        "price_per_min": 50,
+        "minimum_fare": 1000,
+        "airport_surcharge": 2000,
+        "night_multiplier": 1.5,
+        "night_start_hour": 22,
+        "night_end_hour": 6,
+        "co2_saved_per_km": 120,
+        "daily_target": 30000,
+        "alert_threshold_percent": 85,
+        "zone": "douala",
+        "is_active": true
+    }
+]

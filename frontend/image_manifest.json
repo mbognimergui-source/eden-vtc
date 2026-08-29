@@ -1,0 +1,23 @@
+{
+  "status": "success",
+  "results": [
+    {
+      "status": "success",
+      "filename": "eden-vtc-app-icon-512.png",
+      "url": "https://mgx-backend-cdn.metadl.com/generate/images/1463720/2026-08-12/uj7hoeycaj7a/eden-vtc-app-icon-512.png",
+      "path": "https://mgx-backend-cdn.metadl.com/generate/images/1463720/2026-08-12/uj7hoeycaj7a/eden-vtc-app-icon-512.png",
+      "absolute_path": "https://mgx-backend-cdn.metadl.com/generate/images/1463720/2026-08-12/uj7hoeycaj7a/eden-vtc-app-icon-512.png"
+    },
+    {
+      "status": "success",
+      "filename": "eden-vtc-splash-banner.png",
+      "url": "https://mgx-backend-cdn.metadl.com/generate/images/1463720/2026-08-12/uj7horqcakbq/eden-vtc-splash-banner.png",
+      "path": "https://mgx-backend-cdn.metadl.com/generate/images/1463720/2026-08-12/uj7horqcakbq/eden-vtc-splash-banner.png",
+      "absolute_path": "https://mgx-backend-cdn.metadl.com/generate/images/1463720/2026-08-12/uj7horqcakbq/eden-vtc-splash-banner.png"
+    }
+  ],
+  "success_count": 2,
+  "failed_count": 0,
+  "running_count": 0,
+  "message": "Generated 2/2 images total"
+}

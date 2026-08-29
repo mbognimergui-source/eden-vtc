@@ -1,0 +1,81 @@
+{
+    "title": "country_tariffs",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "country_code": {
+            "type": "string",
+            "description": "Code pays ISO (CM, SN, CI, GA, CD, etc.)"
+        },
+        "country_name": {
+            "type": "string",
+            "description": "Nom du pays"
+        },
+        "currency_code": {
+            "type": "string",
+            "description": "Code devise ISO (XAF, XOF, CDF, GNF, etc.)"
+        },
+        "currency_symbol": {
+            "type": "string",
+            "description": "Symbole ou nom court de la devise (FCFA, FC, FG, etc.)"
+        },
+        "base_fare": {
+            "type": "integer",
+            "description": "Prise en charge en unité locale"
+        },
+        "price_per_km": {
+            "type": "integer",
+            "description": "Prix par km en unité locale"
+        },
+        "price_per_min": {
+            "type": "integer",
+            "description": "Prix par minute en unité locale"
+        },
+        "minimum_fare": {
+            "type": "integer",
+            "description": "Course minimum en unité locale"
+        },
+        "airport_surcharge": {
+            "type": "integer",
+            "description": "Supplément aéroport en unité locale"
+        },
+        "night_multiplier": {
+            "type": "number",
+            "default": 1.5,
+            "description": "Multiplicateur nuit"
+        },
+        "night_start_hour": {
+            "type": "integer",
+            "default": 22
+        },
+        "night_end_hour": {
+            "type": "integer",
+            "default": 6
+        },
+        "daily_target": {
+            "type": "integer",
+            "description": "Objectif chauffeur journalier en unité locale"
+        },
+        "rounding_unit": {
+            "type": "integer",
+            "default": 100,
+            "description": "Arrondi au multiple de (100 pour FCFA, 500 pour CDF, etc.)"
+        },
+        "is_active": {
+            "type": "boolean",
+            "default": true
+        }
+    },
+    "required": [
+        "country_code",
+        "country_name",
+        "currency_code",
+        "currency_symbol",
+        "base_fare",
+        "price_per_km",
+        "price_per_min",
+        "minimum_fare"
+    ]
+}

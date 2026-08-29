@@ -1,0 +1,42 @@
+{
+    "title": "wallet_transactions",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "passenger_id": {
+            "type": "integer"
+        },
+        "amount": {
+            "type": "integer"
+        },
+        "type": {
+            "type": "string",
+            "enum": [
+                "topup",
+                "debit",
+                "refund",
+                "debt_payment"
+            ]
+        },
+        "payment_method": {
+            "type": "string",
+            "enum": [
+                "cash",
+                "orange_money",
+                "mtn_momo"
+            ]
+        },
+        "reference": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "amount",
+        "type"
+    ]
+}

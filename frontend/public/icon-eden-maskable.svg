@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="EDEN VTC">
+  <defs>
+    <linearGradient id="edenBgMask" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#245B6E" />
+      <stop offset="100%" stop-color="#12333F" />
+    </linearGradient>
+    <linearGradient id="edenGoldMask" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E7C65A" />
+      <stop offset="100%" stop-color="#C9A227" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fond plein : requis pour le masquage Android -->
+  <rect width="512" height="512" fill="url(#edenBgMask)" />
+
+  <!-- Contenu confiné dans la zone de sécurité centrale (60%) -->
+  <g transform="translate(256 256) scale(0.62) translate(-256 -256)">
+    <circle cx="256" cy="236" r="150" fill="#C9A227" opacity="0.10" />
+    <path
+      d="M126 300c0-10 5-19 14-23l24-11 33-49c7-11 19-17 32-17h54c13 0 25 6 32 17l33 49 24 11c9 4 14 13 14 23v26c0 8-6 14-14 14h-232c-8 0-14-6-14-14z"
+      fill="url(#edenGoldMask)"
+    />
+    <path
+      d="M203 226l22-33c3-4 8-7 13-7h48c5 0 10 3 13 7l22 33z"
+      fill="#12333F"
+      opacity="0.85"
+    />
+    <circle cx="186" cy="344" r="26" fill="url(#edenGoldMask)" />
+    <circle cx="186" cy="344" r="11" fill="#12333F" />
+    <circle cx="326" cy="344" r="26" fill="url(#edenGoldMask)" />
+    <circle cx="326" cy="344" r="11" fill="#12333F" />
+    <path d="M268 96l-64 92h44l-16 72 68-100h-46z" fill="#FFFFFF" />
+  </g>
+</svg>

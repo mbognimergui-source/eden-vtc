@@ -1,0 +1,54 @@
+{
+    "title": "vehicles",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "fleet_id": {
+            "type": "string",
+            "description": "Format EDEN-VTC-001 to EDEN-VTC-1000"
+        },
+        "model": {
+            "type": "string"
+        },
+        "brand": {
+            "type": "string"
+        },
+        "license_plate": {
+            "type": "string"
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "available",
+                "in_use",
+                "maintenance",
+                "offline"
+            ],
+            "default": "available"
+        },
+        "km_counter": {
+            "type": "integer",
+            "default": 0
+        },
+        "next_maintenance_date": {
+            "type": "string",
+            "format": "date"
+        },
+        "battery_level": {
+            "type": "integer",
+            "default": 100
+        },
+        "zone": {
+            "type": "string",
+            "default": "douala"
+        }
+    },
+    "required": [
+        "fleet_id",
+        "model",
+        "brand",
+        "license_plate"
+    ]
+}

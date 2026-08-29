@@ -1,0 +1,57 @@
+[
+    {
+        "vehicle_id": 1,
+        "latitude": 4.0435,
+        "longitude": 9.6966,
+        "speed": 45.0,
+        "heading": 180.0,
+        "accuracy": 5.0,
+        "status": "moving",
+        "ride_id": null,
+        "driver_id": 1
+    },
+    {
+        "vehicle_id": 2,
+        "latitude": 4.0186,
+        "longitude": 9.6942,
+        "speed": 0.0,
+        "heading": 90.0,
+        "accuracy": 3.0,
+        "status": "idle",
+        "ride_id": null,
+        "driver_id": 2
+    },
+    {
+        "vehicle_id": 3,
+        "latitude": 4.0567,
+        "longitude": 9.7089,
+        "speed": 32.0,
+        "heading": 270.0,
+        "accuracy": 8.0,
+        "status": "moving",
+        "ride_id": null,
+        "driver_id": 3
+    },
+    {
+        "vehicle_id": 4,
+        "latitude": 4.0127,
+        "longitude": 9.7023,
+        "speed": 0.0,
+        "heading": 0.0,
+        "accuracy": 4.0,
+        "status": "parked",
+        "ride_id": null,
+        "driver_id": null
+    },
+    {
+        "vehicle_id": 5,
+        "latitude": 4.0712,
+        "longitude": 9.7345,
+        "speed": 55.0,
+        "heading": 45.0,
+        "accuracy": 6.0,
+        "status": "moving",
+        "ride_id": null,
+        "driver_id": 5
+    }
+]

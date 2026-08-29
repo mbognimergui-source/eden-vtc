@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EDEN VTC — Hors ligne</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: linear-gradient(160deg, #245b6e 0%, #12333f 100%);
+        color: #ffffff;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        text-align: center;
+      }
+      .card { max-width: 420px; }
+      .badge {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 20px;
+        border-radius: 22px;
+        background: rgba(201, 162, 39, 0.16);
+        border: 1px solid rgba(201, 162, 39, 0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+      }
+      h1 { font-size: 22px; margin: 0 0 12px; }
+      p { font-size: 15px; line-height: 1.6; opacity: 0.85; margin: 0 0 24px; }
+      button {
+        background: #c9a227;
+        color: #12333f;
+        border: 0;
+        border-radius: 12px;
+        padding: 13px 26px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:active { transform: scale(0.98); }
+      .hint { margin-top: 22px; font-size: 13px; opacity: 0.6; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="badge">⚡</div>
+      <h1>Vous êtes hors ligne</h1>
+      <p>
+        EDEN VTC n'arrive pas à joindre le réseau. Vérifiez votre connexion
+        mobile ou Wi-Fi, puis réessayez.
+      </p>
+      <button type="button" onclick="location.reload()">Réessayer</button>
+      <div class="hint">
+        You are offline — check your connection and try again.
+      </div>
+    </div>
+  </body>
+</html>

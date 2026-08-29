@@ -1,0 +1,14 @@
+[
+    {
+        "account_type": "encours",
+        "balance": 0,
+        "label": "Compte des Encours (Soldes Wallets Clients)",
+        "last_updated_reason": "Initialisation du compte"
+    },
+    {
+        "account_type": "caisse",
+        "balance": 0,
+        "label": "Compte Caisse (Recettes Validées)",
+        "last_updated_reason": "Initialisation du compte"
+    }
+]

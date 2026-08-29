@@ -1,0 +1,41 @@
+{
+    "title": "user_alerts",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "user_id": {
+            "type": "string"
+        },
+        "alert_type": {
+            "type": "string"
+        },
+        "severity": {
+            "type": "string"
+        },
+        "title": {
+            "type": "string"
+        },
+        "message": {
+            "type": "string"
+        },
+        "details": {
+            "type": "string"
+        },
+        "is_read": {
+            "type": "boolean"
+        },
+        "is_dismissed": {
+            "type": "boolean"
+        }
+    },
+    "required": [
+        "id",
+        "user_id",
+        "alert_type",
+        "severity",
+        "title",
+        "message"
+    ]
+}

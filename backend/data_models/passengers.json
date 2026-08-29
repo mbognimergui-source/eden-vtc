@@ -1,0 +1,56 @@
+{
+    "title": "passengers",
+    "type": "object",
+    "description": "Profil passager minimal, prenom et ville",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Identifiant auto-incremente"
+        },
+        "user_id": {
+            "type": "string",
+            "description": "Identifiant utilisateur"
+        },
+        "first_name": {
+            "type": "string",
+            "description": "Prenom du passager"
+        },
+        "last_name": {
+            "type": "string",
+            "description": "Nom du passager, optionnel"
+        },
+        "phone": {
+            "type": "string",
+            "description": "Numero de telephone au format E.164"
+        },
+        "city": {
+            "type": "string",
+            "description": "Ville du passager, ex Douala"
+        },
+        "wallet_balance": {
+            "type": "integer",
+            "description": "Solde du portefeuille en FCFA"
+        },
+        "has_pending_debt": {
+            "type": "boolean",
+            "description": "Dette en cours"
+        },
+        "debt_amount": {
+            "type": "integer",
+            "description": "Montant de la dette en FCFA"
+        },
+        "total_rides": {
+            "type": "integer",
+            "description": "Nombre total de courses"
+        },
+        "co2_saved": {
+            "type": "number",
+            "description": "CO2 evite en kg"
+        }
+    },
+    "required": [
+        "first_name",
+        "phone",
+        "user_id"
+    ]
+}

@@ -1,0 +1,52 @@
+[
+    {
+        "fleet_id": "EDEN-VTC-001",
+        "model": "Model 3",
+        "brand": "Tesla",
+        "license_plate": "LT-2345-DLA",
+        "status": "available",
+        "km_counter": 12500,
+        "battery_level": 85,
+        "zone": "douala"
+    },
+    {
+        "fleet_id": "EDEN-VTC-002",
+        "model": "e-208",
+        "brand": "Peugeot",
+        "license_plate": "LT-3456-DLA",
+        "status": "available",
+        "km_counter": 8700,
+        "battery_level": 92,
+        "zone": "douala"
+    },
+    {
+        "fleet_id": "EDEN-VTC-003",
+        "model": "Zoe",
+        "brand": "Renault",
+        "license_plate": "LT-4567-DLA",
+        "status": "in_use",
+        "km_counter": 15200,
+        "battery_level": 67,
+        "zone": "douala"
+    },
+    {
+        "fleet_id": "EDEN-VTC-004",
+        "model": "ID.4",
+        "brand": "Volkswagen",
+        "license_plate": "LT-5678-DLA",
+        "status": "available",
+        "km_counter": 6300,
+        "battery_level": 95,
+        "zone": "douala"
+    },
+    {
+        "fleet_id": "EDEN-VTC-005",
+        "model": "EQA",
+        "brand": "Mercedes",
+        "license_plate": "LT-6789-DLA",
+        "status": "maintenance",
+        "km_counter": 22100,
+        "battery_level": 45,
+        "zone": "douala"
+    }
+]

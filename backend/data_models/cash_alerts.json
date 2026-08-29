@@ -1,0 +1,56 @@
+{
+    "title": "cash_alerts",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "alert_type": {
+            "type": "string",
+            "description": "large_transaction, daily_threshold, debt_created, manual_entry, low_encours"
+        },
+        "severity": {
+            "type": "string",
+            "description": "info, warning, critical"
+        },
+        "title": {
+            "type": "string"
+        },
+        "message": {
+            "type": "string"
+        },
+        "amount": {
+            "type": "integer"
+        },
+        "ride_id": {
+            "type": "integer"
+        },
+        "passenger_id": {
+            "type": "integer"
+        },
+        "details": {
+            "type": "object"
+        },
+        "is_read": {
+            "type": "boolean",
+            "default": false
+        },
+        "is_resolved": {
+            "type": "boolean",
+            "default": false
+        },
+        "resolved_by": {
+            "type": "string"
+        },
+        "resolved_at": {
+            "type": "string",
+            "format": "date-time"
+        }
+    },
+    "required": [
+        "alert_type",
+        "severity",
+        "title",
+        "message"
+    ]
+}

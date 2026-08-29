@@ -1,0 +1,51 @@
+{
+    "title": "cash_register_transactions",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer"
+        },
+        "account_type": {
+            "type": "string",
+            "enum": [
+                "encours",
+                "caisse"
+            ],
+            "description": "Compte concerné"
+        },
+        "operation": {
+            "type": "string",
+            "enum": [
+                "credit",
+                "debit"
+            ],
+            "description": "Sens de l'opération"
+        },
+        "amount": {
+            "type": "integer",
+            "description": "Montant en FCFA"
+        },
+        "ride_id": {
+            "type": "integer",
+            "description": "ID de la course associée (si applicable)"
+        },
+        "passenger_id": {
+            "type": "integer",
+            "description": "ID du passager (si applicable)"
+        },
+        "description": {
+            "type": "string",
+            "description": "Description de l'opération"
+        },
+        "balance_after": {
+            "type": "integer",
+            "description": "Solde du compte après l'opération"
+        }
+    },
+    "required": [
+        "account_type",
+        "operation",
+        "amount",
+        "description"
+    ]
+}

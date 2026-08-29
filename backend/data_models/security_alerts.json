@@ -1,0 +1,51 @@
+{
+    "title": "security_alerts",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Auto-increment primary key"
+        },
+        "alert_type": {
+            "type": "string",
+            "description": "Type of alert: brute_force, xss_attempt, sql_injection, path_traversal, rate_limit_exceeded, suspicious_ip, unauthorized_access, file_upload_violation"
+        },
+        "severity": {
+            "type": "string",
+            "description": "Severity level: critical, high, medium, low"
+        },
+        "source_ip": {
+            "type": "string",
+            "description": "Hashed IP address of the attacker"
+        },
+        "target_path": {
+            "type": "string",
+            "description": "The API path that was targeted"
+        },
+        "description": {
+            "type": "string",
+            "description": "Human-readable description of the alert"
+        },
+        "details": {
+            "type": "string",
+            "description": "JSON string with additional technical details"
+        },
+        "is_resolved": {
+            "type": "boolean",
+            "description": "Whether the alert has been resolved/acknowledged"
+        },
+        "resolved_by": {
+            "type": "string",
+            "description": "Admin user who resolved the alert"
+        },
+        "resolved_at": {
+            "type": "string",
+            "description": "Timestamp when alert was resolved"
+        }
+    },
+    "required": [
+        "alert_type",
+        "severity",
+        "description"
+    ]
+}

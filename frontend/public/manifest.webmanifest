@@ -1,0 +1,54 @@
+{
+  "name": "EDEN VTC — VTC électrique",
+  "short_name": "EDEN VTC",
+  "description": "Commandez un VTC 100% électrique au Cameroun. Wallet prépayé, courses à solde nul et suivi en temps réel.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait-primary",
+  "background_color": "#12333F",
+  "theme_color": "#1F4E5F",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["travel", "navigation", "business"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icon-eden.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-eden-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "https://mgx-backend-cdn.metadl.com/generate/images/1463720/2026-08-12/uj7hoeycaj7a/eden-vtc-app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Commander une course",
+      "short_name": "Commander",
+      "url": "/book?source=pwa-shortcut"
+    },
+    {
+      "name": "Mon wallet",
+      "short_name": "Wallet",
+      "url": "/wallet?source=pwa-shortcut"
+    },
+    {
+      "name": "Alertes sécurité",
+      "short_name": "Sécurité",
+      "url": "/security?source=pwa-shortcut"
+    }
+  ]
+}
