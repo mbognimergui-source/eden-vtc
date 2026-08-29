@@ -1,0 +1,10 @@
+**/node_modules
+**/__pycache__
+**/.venv
+**/dist
+**/.git
+**/.vite
+backend/*.db
+backend/*.log
+backend/logs
+.claude

@@ -198,14 +198,48 @@ async def general_exception_handler(request: Request, exc: Exception):
         )
 
 
-@app.get("/")
-def root():
-    return {"message": "FastAPI Modular Template is running"}
-
-
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+
+# Sert le frontend construit (frontend/dist) depuis le même service que
+# l'API : un seul lien public, pas de CORS entre deux domaines séparés.
+# En local sans build frontend, la route "/" retombe sur un message JSON.
+_FRONTEND_DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist")
+_FRONTEND_ASSETS = os.path.join(_FRONTEND_DIST, "assets")
+
+if os.path.isdir(_FRONTEND_ASSETS):
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/assets", StaticFiles(directory=_FRONTEND_ASSETS), name="frontend-assets")
+
+
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    """Sert les fichiers statiques du frontend, avec repli SPA sur index.html.
+
+    Les routes API sont déjà enregistrées (via include_routers_from_package
+    ci-dessus) et sont donc toujours prioritaires sur ce catch-all générique.
+    Le préfixe "api/" est exclu explicitement en second rempart.
+    """
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    if not os.path.isdir(_FRONTEND_DIST):
+        return {"message": "FastAPI Modular Template is running"}
+
+    from fastapi.responses import FileResponse
+
+    candidate = os.path.join(_FRONTEND_DIST, full_path) if full_path else None
+    if candidate and os.path.isfile(candidate):
+        return FileResponse(candidate)
+
+    index_path = os.path.join(_FRONTEND_DIST, "index.html")
+    if os.path.isfile(index_path):
+        return FileResponse(index_path)
+
+    return {"message": "FastAPI Modular Template is running"}
 
 
 def run_in_debug_mode(app: FastAPI):
