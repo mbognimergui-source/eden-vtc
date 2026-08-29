@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Zap, Phone, ShieldCheck, ArrowLeft, Loader2, MessageSquare, MessageCircle, User, MapPin } from 'lucide-react';
+import { Zap, Phone, ShieldCheck, ArrowLeft, Loader2, MessageSquare, MessageCircle, User, MapPin, LocateFixed } from 'lucide-react';
 import {
   requestPhoneCode,
   verifyPhoneCode,
@@ -15,6 +15,7 @@ import {
   isPlausiblePhone,
   type OtpChannel,
 } from '@/lib/phoneAuth';
+import { detectUserLocation } from '@/lib/geolocation';
 
 type Step = 'phone' | 'code' | 'profile';
 
@@ -33,12 +34,34 @@ export default function PhoneLogin() {
   const [code, setCode] = useState('');
   const [firstName, setFirstName] = useState('');
   const [city, setCity] = useState('Douala');
+  const [cityDetecting, setCityDetecting] = useState(false);
+  const [cityAutoDetected, setCityAutoDetected] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [resendIn, setResendIn] = useState(0);
 
   const timerRef = useRef<number | null>(null);
+  const cityTouchedRef = useRef(false);
+
+  // Détection de la ville via les coordonnées GPS réelles de l'utilisateur
+  // (avec repli IP interne à detectUserLocation si le GPS est refusé) — ne
+  // s'exécute que pour un nouveau compte, sans ville déjà enregistrée, et
+  // n'écrase jamais un choix que l'utilisateur aurait fait entre-temps.
+  const detectCityFromGPS = useCallback(async () => {
+    setCityDetecting(true);
+    try {
+      const location = await detectUserLocation();
+      if (!cityTouchedRef.current && location?.city) {
+        setCity(location.city);
+        setCityAutoDetected(true);
+      }
+    } catch {
+      // Échec silencieux : la ville reste sur la valeur par défaut, modifiable à la main.
+    } finally {
+      setCityDetecting(false);
+    }
+  }, []);
 
   // Compte à rebours avant de pouvoir redemander un code
   useEffect(() => {
@@ -105,7 +128,12 @@ export default function PhoneLogin() {
         return;
       }
       setFirstName(result.first_name || '');
-      setCity(result.city || 'Douala');
+      if (result.city) {
+        setCity(result.city);
+      } else {
+        // Nouveau compte, aucune ville enregistrée : on détecte via GPS.
+        detectCityFromGPS();
+      }
       setStep('profile');
     } catch (err) {
       setError(extractErrorMessage(err, 'Code incorrect. Réessayez.'));
@@ -333,20 +361,42 @@ export default function PhoneLogin() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="city">Ville</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="city">Ville</Label>
+                  {cityDetecting && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Détection de votre position…
+                    </span>
+                  )}
+                  {!cityDetecting && cityAutoDetected && (
+                    <span className="flex items-center gap-1 text-xs text-green-700">
+                      <LocateFixed className="w-3 h-3" />
+                      Détectée via votre position
+                    </span>
+                  )}
+                </div>
                 <Input
                   id="city"
                   type="text"
                   placeholder="Ex : Douala"
                   value={city}
-                  onChange={(e) => setCity(e.target.value.slice(0, 60))}
+                  onChange={(e) => {
+                    cityTouchedRef.current = true;
+                    setCityAutoDetected(false);
+                    setCity(e.target.value.slice(0, 60));
+                  }}
                   className="rounded-xl"
                 />
                 <div className="flex flex-wrap gap-2 pt-1">
                   {CITIES.map((c) => (
                     <button
                       key={c}
-                      onClick={() => setCity(c)}
+                      onClick={() => {
+                        cityTouchedRef.current = true;
+                        setCityAutoDetected(false);
+                        setCity(c);
+                      }}
                       className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                         city === c
                           ? 'bg-[hsl(195,50%,25%)] text-white'

@@ -15,6 +15,7 @@ backend/eden_vtc_dev.db
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+.vite/
 frontend/*.log
 npm-debug.log*
 

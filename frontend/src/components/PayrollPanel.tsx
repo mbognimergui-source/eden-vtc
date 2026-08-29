@@ -86,14 +86,12 @@ export default function PayrollPanel({ drivers }: Props) {
     try {
       const [recordsRes, summaryRes] = await Promise.all([
         client.apiCall.invoke({
-          url: '/api/v1/payroll/records',
+          url: `/api/v1/payroll/records?period_year=${year}&period_month=${month}`,
           method: 'GET',
-          params: { period_year: year, period_month: month },
         }),
         client.apiCall.invoke({
-          url: '/api/v1/payroll/summary',
+          url: `/api/v1/payroll/summary?period_year=${year}&period_month=${month}`,
           method: 'GET',
-          params: { period_year: year, period_month: month },
         }),
       ]);
       if (recordsRes?.data?.records) setRecords(recordsRes.data.records);

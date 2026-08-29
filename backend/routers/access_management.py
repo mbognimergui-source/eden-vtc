@@ -259,11 +259,13 @@ async def initialize_first_admin(
     Initialize the first admin. Only works if no admin exists yet.
     The first authenticated user to call this becomes admin.
     """
-    # Check if any admin exists
+    # Check if any admin exists (several may exist in practice — e.g. via
+    # setup-all-roles — so this only needs to detect presence, not fetch a
+    # single row: scalar_one_or_none() would raise on more than one match).
     stmt = select(User_roles).where(
         User_roles.role == "admin",
         User_roles.is_active == True
-    )
+    ).limit(1)
     result = await db.execute(stmt)
     existing_admin = result.scalar_one_or_none()
 
