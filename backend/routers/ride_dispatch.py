@@ -3,7 +3,7 @@
 import logging
 import math
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -490,11 +490,14 @@ async def get_ride_status(
         # Auto-acceptation réservée aux tests internes (DEMO_MODE=true).
         # Désactivée par défaut : la course reste 'pending' indéfiniment.
         if _is_demo_mode() and ride.status == "pending" and ride.created_at:
-            now = datetime.now(timezone.utc)
+            # ride.created_at est écrit via `datetime.now()` (heure locale naïve,
+            # cf. models/rides.py) : la comparaison doit rester dans le même
+            # référentiel, sinon un serveur non-UTC ne déclenche jamais l'auto-
+            # acceptation (voire la déclenche après un délai erroné).
             ride_created = ride.created_at
-            # Ensure timezone-aware comparison
-            if ride_created.tzinfo is None:
-                ride_created = ride_created.replace(tzinfo=timezone.utc)
+            if ride_created.tzinfo is not None:
+                ride_created = ride_created.astimezone().replace(tzinfo=None)
+            now = datetime.now()
             elapsed = (now - ride_created).total_seconds()
 
             if elapsed >= DEMO_AUTO_ACCEPT_DELAY_SECONDS:
