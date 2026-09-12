@@ -6,19 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { client } from '@/lib/client';
+import { apiBaseUrl, client } from '@/lib/client';
 import { t } from '@/lib/i18n';
-import { Wallet as WalletIcon, ArrowLeft, Plus, ArrowUpRight, ArrowDownLeft, AlertTriangle, CreditCard, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Wallet as WalletIcon, ArrowLeft, Plus, ArrowUpRight, ArrowDownLeft, AlertTriangle, CreditCard, CheckCircle2, ShieldAlert, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCountryTariff } from '@/hooks/useCountryTariff';
 import BottomNav from '@/components/BottomNav';
 import DebtAlertBanner from '@/components/DebtAlertBanner';
+import { initiateOrangeMoneyTopup, pollOrangeMoneyStatus } from '@/lib/orangeMoney';
 
-// Mode paiement : tant que VITE_PAYMENT_LIVE_MODE n'est pas explicitement à
-// "true", les rechargements et régularisations sont des opérations de
-// démonstration (aucun prélèvement réel chez Orange Money / MTN MoMo).
-const PAYMENT_LIVE_MODE =
-  String(import.meta.env.VITE_PAYMENT_LIVE_MODE ?? '').trim().toLowerCase() === 'true';
+interface PaymentConfig {
+  live_mode: boolean;
+  providers: { provider: string; configured: boolean }[];
+}
 
 export default function Wallet() {
   const navigate = useNavigate();
@@ -36,10 +36,29 @@ export default function Wallet() {
   const [debtPayAmount, setDebtPayAmount] = useState('');
   const [payingDebt, setPayingDebt] = useState(false);
   const [debtPaid, setDebtPaid] = useState(false);
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+
+  const liveMode = paymentConfig?.live_mode ?? false;
+  const orangeMoneyLive =
+    liveMode && paymentConfig?.providers.some((p) => p.provider === 'orange_money' && p.configured);
 
   useEffect(() => {
     loadData();
+    loadPaymentConfig();
   }, []);
+
+  const loadPaymentConfig = async () => {
+    try {
+      const base = apiBaseUrl === '/' ? '' : apiBaseUrl;
+      const res = await fetch(`${base}/api/v1/payment/config`);
+      if (res.ok) {
+        setPaymentConfig(await res.json());
+      }
+    } catch (e) {
+      console.error('Failed to load payment config', e);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -66,6 +85,12 @@ export default function Wallet() {
       toast({ title: `Montant minimum : ${formatPrice(500)}`, variant: 'destructive' });
       return;
     }
+
+    if (topupMethod === 'orange_money' && orangeMoneyLive) {
+      await handleOrangeMoneyTopup(amount);
+      return;
+    }
+
     setLoading(true);
     try {
       // Create transaction
@@ -117,6 +142,39 @@ export default function Wallet() {
       toast({ title: e?.message || 'Erreur', variant: 'destructive' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOrangeMoneyTopup = async (amount: number) => {
+    setLoading(true);
+    try {
+      const { order_id } = await initiateOrangeMoneyTopup(amount);
+      toast({ title: 'Confirmez le paiement sur votre téléphone Orange Money…' });
+      setLoading(false);
+      setAwaitingConfirmation(true);
+
+      const result = await pollOrangeMoneyStatus(order_id);
+
+      if (result.status === 'successful') {
+        setTopupAmount('');
+        toast({ title: 'Rechargement Orange Money confirmé !' });
+        loadData();
+      } else if (result.status === 'failed') {
+        toast({
+          title: result.failure_reason || 'Paiement refusé ou expiré.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Confirmation non reçue à temps. Réessayez si le prélèvement ne s\'est pas fait.',
+          variant: 'destructive',
+        });
+      }
+    } catch (e: any) {
+      toast({ title: e?.message || 'Erreur Orange Money', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+      setAwaitingConfirmation(false);
     }
   };
 
@@ -333,10 +391,16 @@ export default function Wallet() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!PAYMENT_LIVE_MODE && (
+            {!orangeMoneyLive && (
               <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
                 <span className="font-semibold">Mode test</span> — aucun paiement réel n'est débité.
                 Les rechargements et régularisations sont simulés pour la démonstration.
+              </div>
+            )}
+            {orangeMoneyLive && topupMethod === 'orange_money' && (
+              <div className="rounded-xl border border-orange-300 bg-orange-50 px-3 py-2.5 text-sm text-orange-900 flex items-center gap-2">
+                <Smartphone className="w-4 h-4 shrink-0" />
+                <span>Paiement réel Orange Money : vous devrez confirmer sur votre téléphone.</span>
               </div>
             )}
             <div className="grid grid-cols-3 gap-2">
@@ -376,10 +440,19 @@ export default function Wallet() {
             </div>
             <Button
               onClick={handleTopup}
-              disabled={loading}
+              disabled={loading || awaitingConfirmation}
               className="w-full bg-[hsl(45,65%,47%)] hover:bg-[hsl(45,65%,52%)] text-[hsl(195,50%,10%)] font-semibold"
             >
-              {loading ? t('common.loading') : `Recharger ${topupAmount ? formatPrice(parseInt(topupAmount) || 0) : ''}`}
+              {awaitingConfirmation ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                  En attente de confirmation sur votre téléphone…
+                </span>
+              ) : loading ? (
+                t('common.loading')
+              ) : (
+                `Recharger ${topupAmount ? formatPrice(parseInt(topupAmount) || 0) : ''}`
+              )}
             </Button>
           </CardContent>
         </Card>
