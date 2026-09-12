@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,7 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { useCountryTariff } from '@/hooks/useCountryTariff';
 import { useTrafficData } from '@/hooks/useTrafficData';
 import { EDEN_CITIES, haversineDistance, reverseGeocode, getPositionWithFallback } from '@/lib/geolocation';
+import { nearbyNeighborhoods } from '@/lib/doualaNeighborhoods';
 import BottomNav from '@/components/BottomNav';
 import { useRideStatus, requestNotificationPermission } from '@/hooks/useRideStatus';
 import DebtAlertBanner from '@/components/DebtAlertBanner';
@@ -101,6 +102,17 @@ export default function BookRide() {
     ? { lat: location.lat, lng: location.lng }
     : { lat: 4.0511, lng: 9.7679 };
 
+  // Quartiers de Douala à moins de 10 km du point de départ (ou du centre-ville
+  // tant que le départ n'est pas encore connu), proposés comme destinations
+  // rapides sous le champ Destination.
+  const NEARBY_DESTINATION_RADIUS_KM = 10;
+  const nearbyDestinations = useMemo(() => {
+    const centerLat = pickupCoords?.lat ?? cityCenter.lat;
+    const centerLng = pickupCoords?.lng ?? cityCenter.lng;
+    return nearbyNeighborhoods(centerLat, centerLng, NEARBY_DESTINATION_RADIUS_KM);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickupCoords?.lat, pickupCoords?.lng, cityCenter.lat, cityCenter.lng]);
+
   useEffect(() => {
     loadPassengerData();
   }, []);
@@ -178,7 +190,7 @@ export default function BookRide() {
     try {
       // Geocode addresses using Nominatim (works in all African cities)
       const pCoords = pickupCoords || await geocodeAddress(pickup, cityCenter);
-      const dCoords = await geocodeAddress(destination, cityCenter);
+      const dCoords = destCoords || await geocodeAddress(destination, cityCenter);
       setPickupCoords(pCoords);
       setDestCoords(dCoords);
 
@@ -542,7 +554,7 @@ export default function BookRide() {
                   <Input
                     placeholder={`Ex: Centre-ville, ${location?.city || 'Ville'}`}
                     value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
+                    onChange={(e) => { setDestination(e.target.value); setDestCoords(null); }}
                     className="flex-1 h-12 text-base px-4 border-2 border-border/60 focus:border-[hsl(195,50%,25%)] rounded-xl"
                   />
                   <SavedAddresses
@@ -554,6 +566,30 @@ export default function BookRide() {
                     }}
                   />
                 </div>
+                {nearbyDestinations.length > 0 && (
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-xs text-muted-foreground">
+                      {nearbyDestinations.length} quartier{nearbyDestinations.length > 1 ? 's' : ''} à moins de {NEARBY_DESTINATION_RADIUS_KM} km
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {nearbyDestinations.map((n) => (
+                        <Button
+                          key={n.name}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className={`h-7 rounded-full text-xs px-3 ${destination === `${n.name}, Douala` ? 'border-[hsl(195,50%,25%)] bg-[hsl(195,50%,25%)]/10' : ''}`}
+                          onClick={() => {
+                            setDestination(`${n.name}, Douala`);
+                            setDestCoords({ lat: n.lat, lng: n.lng });
+                          }}
+                        >
+                          {n.name} · {n.distanceKm.toFixed(1)} km
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Schedule toggle */}
