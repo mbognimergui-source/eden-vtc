@@ -1,7 +1,13 @@
 from core.database import Base
 from datetime import datetime
 from sqlalchemy import Boolean, Column, DateTime, Integer, String
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB as PostgresJSONB
+from sqlalchemy.types import JSON
+
+# JSONB is PostgreSQL-specific and has no equivalent in SQLite (used locally/in
+# demo mode). This variant keeps native JSONB in production while falling back
+# to a portable JSON column elsewhere.
+JSONB = JSON().with_variant(PostgresJSONB, "postgresql")
 
 
 class Cash_alerts(Base):

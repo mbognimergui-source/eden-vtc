@@ -255,18 +255,8 @@ def run_in_debug_mode(app: FastAPI):
         app: The FastAPI application instance
     """
     import asyncio
-    from pathlib import Path
 
     import uvicorn
-    from dotenv import load_dotenv
-
-    # Load environment variables from ../.env in debug mode
-    # If `LOCAL_DEBUG=true` is set, then MetaGPT's `ProjectBuilder.build()` will generate the `.env` file
-    env_path = Path(__file__).parent.parent / ".env"
-    if env_path.exists():
-        load_dotenv(env_path, override=True)
-        logger = logging.getLogger(__name__)
-        logger.info(f"Loaded environment variables from {env_path}")
 
     # In debug mode, use asyncio.run() directly to avoid uvicorn's asyncio_run conflicts
     config = uvicorn.Config(
@@ -281,8 +271,18 @@ def run_in_debug_mode(app: FastAPI):
 
 if __name__ == "__main__":
     import sys
+    from pathlib import Path
 
     import uvicorn
+    from dotenv import load_dotenv
+
+    # Load local dev/demo configuration (DATABASE_URL, OTP_DEV_MODE, DEMO_MODE, ...)
+    # from backend/.env. In production, these are set directly in the environment
+    # and no .env file is present, so this is a no-op there.
+    env_path = Path(__file__).parent / ".env"
+    if env_path.exists():
+        load_dotenv(env_path, override=True)
+        logging.getLogger(__name__).info(f"Loaded environment variables from {env_path}")
 
     # Detect if running in debugger (PyCharm, VS Code, etc.)
     # Debuggers patch asyncio which conflicts with uvicorn's asyncio_run

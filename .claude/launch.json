@@ -5,7 +5,7 @@
       "name": "eden-vtc-frontend",
       "runtimeExecutable": "C:\\code\\app vtc\\run-frontend-dev.cmd",
       "runtimeArgs": [],
-      "port": 5173
+      "port": 5174
     }
   ]
 }
