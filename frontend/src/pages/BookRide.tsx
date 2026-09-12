@@ -22,6 +22,7 @@ import { EDEN_CITIES, haversineDistance, reverseGeocode, getPositionWithFallback
 import { nearbyNeighborhoods } from '@/lib/doualaNeighborhoods';
 import BottomNav from '@/components/BottomNav';
 import { useRideStatus, requestNotificationPermission } from '@/hooks/useRideStatus';
+import { useNearbyDrivers } from '@/hooks/useNearbyDrivers';
 import DebtAlertBanner from '@/components/DebtAlertBanner';
 
 // Geocode an address using Nominatim (free, works worldwide in Africa)
@@ -112,6 +113,18 @@ export default function BookRide() {
     return nearbyNeighborhoods(centerLat, centerLng, NEARBY_DESTINATION_RADIUS_KM);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickupCoords?.lat, pickupCoords?.lng, cityCenter.lat, cityCenter.lng]);
+
+  // Chauffeurs EDEN VTC réellement en ligne à moins de 3 km du point de
+  // départ, affichés sur la carte tant que la course n'est pas encore
+  // commandée (une fois confirmée, la carte bascule sur le chauffeur assigné
+  // et le trajet jusqu'à la destination).
+  const NEARBY_DRIVERS_RADIUS_KM = 3;
+  const { nearbyDrivers } = useNearbyDrivers({
+    lat: pickupCoords?.lat,
+    lng: pickupCoords?.lng,
+    radiusKm: NEARBY_DRIVERS_RADIUS_KM,
+    enabled: !rideConfirmed,
+  });
 
   useEffect(() => {
     loadPassengerData();
@@ -336,14 +349,22 @@ export default function BookRide() {
               destinationLng={destCoords?.lng}
               driverLat={driverCoords?.lat}
               driverLng={driverCoords?.lng}
-              userLat={location?.lat}
-              userLng={location?.lng}
+              userLat={pickupCoords?.lat ?? location?.lat}
+              userLng={pickupCoords?.lng ?? location?.lng}
+              nearbyDrivers={rideConfirmed ? [] : nearbyDrivers}
               showRoute={true}
               autoLocate={true}
               trafficSegments={trafficData?.segments.map(s => ({ id: s.id, coords: s.coords, level: s.level })) || []}
               className="h-[280px] w-full"
             />
           </CardContent>
+          {!rideConfirmed && pickupCoords && (
+            <div className="px-4 py-2 text-xs text-muted-foreground border-t bg-muted/30">
+              {nearbyDrivers.length > 0
+                ? `🚗 ${nearbyDrivers.length} chauffeur${nearbyDrivers.length > 1 ? 's' : ''} disponible${nearbyDrivers.length > 1 ? 's' : ''} à moins de ${NEARBY_DRIVERS_RADIUS_KM} km`
+                : `Aucun chauffeur disponible à moins de ${NEARBY_DRIVERS_RADIUS_KM} km pour le moment`}
+            </div>
+          )}
         </Card>
 
         {/* Traffic Panel */}

@@ -76,7 +76,7 @@ export function useRideDispatch(options: UseRideDispatchOptions = {}) {
       const res = await client.apiCall.invoke({
         url: '/api/v1/dispatch/available-rides',
         method: 'GET',
-        params: { driver_lat: pos.lat, driver_lng: pos.lng },
+        data: { driver_lat: pos.lat, driver_lng: pos.lng },
       });
 
       if (res?.data?.rides) {
@@ -140,10 +140,9 @@ export function useRideDispatch(options: UseRideDispatchOptions = {}) {
         await refresh();
         return null;
       } catch (err) {
-        const detail = (err as { data?: { detail?: string }; message?: string })?.data
-          ?.detail;
-        const message =
-          detail || (err as { message?: string })?.message || "Erreur lors de l'acceptation";
+        const errAny = err as { response?: { data?: { detail?: string } }; data?: { detail?: string }; message?: string };
+        const detail = errAny?.response?.data?.detail || errAny?.data?.detail;
+        const message = detail || errAny?.message || "Erreur lors de l'acceptation";
         toast({ title: '❌ Erreur', description: message, variant: 'destructive' });
         await refresh();
         return null;

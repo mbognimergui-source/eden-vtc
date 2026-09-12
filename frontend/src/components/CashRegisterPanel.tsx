@@ -52,7 +52,7 @@ export default function CashRegisterPanel() {
       const [accountsRes, summaryRes, txRes] = await Promise.all([
         client.apiCall.invoke({ url: '/api/v1/cash-register/accounts', method: 'GET' }),
         client.apiCall.invoke({ url: '/api/v1/cash-register/summary', method: 'GET' }),
-        client.apiCall.invoke({ url: '/api/v1/cash-register/transactions', method: 'GET', params: { limit: 30 } }),
+        client.apiCall.invoke({ url: '/api/v1/cash-register/transactions', method: 'GET', data: { limit: 30 } }),
       ]);
 
       if (accountsRes?.data?.accounts) setAccounts(accountsRes.data.accounts);

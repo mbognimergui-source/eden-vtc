@@ -17,6 +17,7 @@ from models.rides import Rides
 from models.drivers import Drivers
 from models.vehicle_positions import Vehicle_positions
 from schemas.auth import UserResponse
+from services import service_areas
 
 logger = logging.getLogger(__name__)
 
@@ -88,44 +89,42 @@ MAX_DEBT_PER_RIDE = 5000
 MIN_RIDES_FOR_CREDIT = 50
 
 # === Zone de service ===
-# EDEN VTC n'exploite actuellement que l'agglomération de Douala. Toute course
-# dont le départ ou l'arrivée sort de ce périmètre est refusée explicitement,
-# afin qu'aucun test tiers ne puisse commander une course non desservie.
-DOUALA_CENTER_LAT = 4.0511
-DOUALA_CENTER_LNG = 9.7679
-SERVICE_RADIUS_KM = 35.0
-SERVICE_AREA_LABEL = "Douala"
+# Villes desservies : cf. services/service_areas.py. Une ville n'est
+# effectivement desservie que si le pays correspondant est actif dans
+# `country_tariffs` — toute course dont le départ ou l'arrivée sort de toutes
+# les zones actives est refusée explicitement.
 
 
-def _distance_from_douala_km(lat: Optional[float], lng: Optional[float]) -> Optional[float]:
-    """Distance en km entre un point et le centre de Douala, ou None si inconnu."""
-    if lat is None or lng is None:
-        return None
-    return haversine_distance(DOUALA_CENTER_LAT, DOUALA_CENTER_LNG, lat, lng)
-
-
-def _assert_within_service_area(
+async def _assert_within_service_area(
+    db: AsyncSession,
     pickup_lat: Optional[float],
     pickup_lng: Optional[float],
     destination_lat: Optional[float],
     destination_lng: Optional[float],
 ) -> None:
-    """Lève une 403 si le départ ou l'arrivée sort de la zone desservie."""
+    """Lève une 403 si le départ ou l'arrivée sort de toute zone de service active."""
+    active_cities = await service_areas.get_active_service_cities(db)
     checks = (
-        ("de départ", _distance_from_douala_km(pickup_lat, pickup_lng)),
-        ("d'arrivée", _distance_from_douala_km(destination_lat, destination_lng)),
+        ("de départ", pickup_lat, pickup_lng),
+        ("d'arrivée", destination_lat, destination_lng),
     )
-    for label, distance in checks:
-        if distance is not None and distance > SERVICE_RADIUS_KM:
-            raise HTTPException(
-                status_code=403,
-                detail=(
-                    f"Le point {label} est situé à environ {distance:.0f} km de "
-                    f"{SERVICE_AREA_LABEL}. EDEN VTC ne dessert actuellement que "
-                    f"l'agglomération de {SERVICE_AREA_LABEL} "
-                    f"(rayon {int(SERVICE_RADIUS_KM)} km)."
-                ),
+    for label, lat, lng in checks:
+        if lat is None or lng is None:
+            continue
+        if service_areas.is_within_any_city(lat, lng, active_cities):
+            continue
+
+        nearest = service_areas.find_nearest_city(lat, lng, active_cities)
+        if nearest:
+            city, distance = nearest
+            detail = (
+                f"Le point {label} est situé à environ {distance:.0f} km de {city.name}, "
+                f"la ville desservie la plus proche (rayon {int(city.radius_km)} km). "
+                f"EDEN VTC n'est pas encore disponible à cet endroit."
             )
+        else:
+            detail = "EDEN VTC n'est pas encore disponible dans cette zone."
+        raise HTTPException(status_code=403, detail=detail)
 
 
 @router.post("/create-ride")
@@ -142,9 +141,10 @@ async def create_ride(
     try:
         from models.passengers import Passengers
 
-        # Zone de service : refuser immédiatement toute course hors Douala
-        _assert_within_service_area(
-            data.pickup_lat, data.pickup_lng, data.destination_lat, data.destination_lng
+        # Zone de service : refuser immédiatement toute course hors des villes
+        # desservies (cf. services/service_areas.py)
+        await _assert_within_service_area(
+            db, data.pickup_lat, data.pickup_lng, data.destination_lat, data.destination_lng
         )
 
         # Trouver ou créer le passager lié à l'utilisateur connecté
@@ -276,6 +276,80 @@ async def create_ride(
         await db.rollback()
         logger.error(f"Error creating ride: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur lors de la création de la course: {str(e)}")
+
+
+@router.get("/service-areas")
+async def get_service_areas(db: AsyncSession = Depends(get_db)):
+    """
+    Liste les villes actuellement desservies (pays actif dans
+    `country_tariffs`), pour affichage côté client — ex. "villes desservies"
+    sur l'écran d'accueil ou message d'indisponibilité localisé.
+    """
+    active_cities = await service_areas.get_active_service_cities(db)
+    return {
+        "cities": [
+            {
+                "name": c.name,
+                "country_code": c.country_code,
+                "country_name": c.country_name,
+                "lat": c.lat,
+                "lng": c.lng,
+                "radius_km": c.radius_km,
+            }
+            for c in active_cities
+        ],
+        "total": len(active_cities),
+    }
+
+
+@router.get("/nearby-drivers")
+async def get_nearby_drivers(
+    lat: float,
+    lng: float,
+    radius_km: float = 3.0,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
+):
+    """
+    Retourne les chauffeurs réellement en ligne (libres) à moins de
+    `radius_km` du point donné, pour affichage sur la carte du passager
+    avant qu'une course ne soit commandée. Ne renvoie que la position et le
+    cap du véhicule : aucune information personnelle du chauffeur.
+    """
+    try:
+        drivers_result = await db.execute(select(Drivers).where(Drivers.status == "online"))
+        online_drivers = {d.id: d for d in drivers_result.scalars().all()}
+
+        if not online_drivers:
+            return {"drivers": [], "total": 0, "radius_km": radius_km}
+
+        positions_result = await db.execute(
+            select(Vehicle_positions).where(Vehicle_positions.driver_id.in_(online_drivers.keys()))
+        )
+
+        nearby = []
+        for pos in positions_result.scalars().all():
+            if pos.latitude is None or pos.longitude is None:
+                continue
+            distance = haversine_distance(lat, lng, pos.latitude, pos.longitude)
+            if distance <= radius_km:
+                driver = online_drivers.get(pos.driver_id)
+                nearby.append({
+                    "driver_id": pos.driver_id,
+                    "vehicle_id": pos.vehicle_id,
+                    "latitude": pos.latitude,
+                    "longitude": pos.longitude,
+                    "heading": pos.heading or 0,
+                    "distance_km": round(distance, 2),
+                    "rating": driver.rating if driver else None,
+                })
+
+        nearby.sort(key=lambda d: d["distance_km"])
+
+        return {"drivers": nearby, "total": len(nearby), "radius_km": radius_km}
+    except Exception as e:
+        logger.error(f"Erreur récupération chauffeurs à proximité: {e}")
+        raise HTTPException(status_code=500, detail="Erreur serveur")
 
 
 @router.get("/available-rides")

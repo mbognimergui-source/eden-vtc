@@ -36,7 +36,7 @@ export function useCashAlerts(pollingInterval = 60000) {
   const fetchAlerts = useCallback(async () => {
     try {
       const [alertsRes, statsRes] = await Promise.all([
-        client.apiCall.invoke({ url: '/api/v1/cash-alerts/alerts', method: 'GET', params: { limit: 30 } }),
+        client.apiCall.invoke({ url: '/api/v1/cash-alerts/alerts', method: 'GET', data: { limit: 30 } }),
         client.apiCall.invoke({ url: '/api/v1/cash-alerts/stats', method: 'GET' }),
       ]);
 

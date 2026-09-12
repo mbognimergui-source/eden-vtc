@@ -140,7 +140,7 @@ export function useUserAlerts(isAuthenticated: boolean): UseUserAlertsReturn {
       const response = await client.apiCall.invoke({
         url: '/api/v1/user-alerts/my-alerts',
         method: 'GET',
-        params: { limit: 50, include_dismissed: false },
+        data: { limit: 50, include_dismissed: false },
       });
 
       if (response && Array.isArray(response)) {

@@ -16,6 +16,14 @@ export interface TrafficSegmentData {
   level: 'low' | 'moderate' | 'heavy' | 'severe';
 }
 
+export interface NearbyDriverData {
+  driver_id: number;
+  latitude: number;
+  longitude: number;
+  heading?: number;
+  distance_km?: number;
+}
+
 interface RideMapProps {
   pickupLat?: number;
   pickupLng?: number;
@@ -26,6 +34,7 @@ interface RideMapProps {
   driverHeading?: number;
   userLat?: number;
   userLng?: number;
+  nearbyDrivers?: NearbyDriverData[];
   showRoute?: boolean;
   showDriverTrail?: boolean;
   followDriver?: boolean;
@@ -358,6 +367,7 @@ export default function RideMap({
   driverHeading = 0,
   userLat,
   userLng,
+  nearbyDrivers = [],
   showRoute = true,
   showDriverTrail = false,
   followDriver = false,
@@ -371,6 +381,7 @@ export default function RideMap({
   const destMarkerRef = useRef<L.Marker | null>(null);
   const driverMarkerRef = useRef<L.Marker | null>(null);
   const trafficLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const nearbyDriversLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const routeRef = useRef<L.Polyline | null>(null);
   const trailRef = useRef<L.Polyline | null>(null);
@@ -572,6 +583,33 @@ export default function RideMap({
       }
     }
   }, [driverLat, driverLng, driverHeading, showDriverTrail, followDriver]);
+
+  // Chauffeurs disponibles à proximité (avant qu'une course ne soit
+  // commandée). Redessinés en bloc à chaque mise à jour de la liste, comme
+  // le calque trafic ci-dessous.
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (nearbyDriversLayerRef.current) {
+      map.removeLayer(nearbyDriversLayerRef.current);
+      nearbyDriversLayerRef.current = null;
+    }
+
+    if (nearbyDrivers.length > 0) {
+      const markers = nearbyDrivers.map((d) =>
+        L.marker([d.latitude, d.longitude], {
+          icon: createDriverIcon(d.heading ?? 0),
+          zIndexOffset: 400,
+        }).bindPopup(
+          `<strong>🚗 Chauffeur disponible</strong>${
+            d.distance_km !== undefined ? `<br/><span style="color:#666">${d.distance_km.toFixed(1)} km</span>` : ''
+          }`
+        )
+      );
+      nearbyDriversLayerRef.current = L.layerGroup(markers).addTo(map);
+    }
+  }, [nearbyDrivers]);
 
   // Draw route with styled polyline
   useEffect(() => {
