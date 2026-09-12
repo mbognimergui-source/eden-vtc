@@ -206,7 +206,8 @@ export function useRideStatus(options: UseRideStatusOptions) {
       }
       return false;
     } catch (err) {
-      const detail = (err as { data?: { detail?: string } })?.data?.detail;
+      const errAny = err as { response?: { data?: { detail?: string } }; data?: { detail?: string } };
+      const detail = errAny?.response?.data?.detail || errAny?.data?.detail;
       toast({
         title: 'Erreur',
         description: detail || "Impossible d'annuler la course",

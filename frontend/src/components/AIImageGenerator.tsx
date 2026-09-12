@@ -77,7 +77,7 @@ export default function AIImageGenerator() {
       setSelectedImage(newImage);
       toast({ title: '✨ Image générée', description: 'Votre visuel est prêt !' });
     } catch (error: any) {
-      const errMsg = error?.data?.detail || error?.message || 'Erreur de génération';
+      const errMsg = error?.response?.data?.detail || error?.data?.detail || error?.message || 'Erreur de génération';
       toast({ title: 'Erreur', description: errMsg, variant: 'destructive' });
     } finally {
       setLoading(false);

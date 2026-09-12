@@ -50,7 +50,7 @@ export default function DriverTTSNotification() {
         playAudio(audioUrl);
       }
     } catch (error: any) {
-      const errMsg = error?.data?.detail || error?.message || 'Erreur TTS';
+      const errMsg = error?.response?.data?.detail || error?.data?.detail || error?.message || 'Erreur TTS';
       toast({ title: 'Erreur', description: errMsg, variant: 'destructive' });
     } finally {
       setIsGenerating(false);

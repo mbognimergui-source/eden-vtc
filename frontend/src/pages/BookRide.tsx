@@ -276,7 +276,7 @@ export default function BookRide() {
         toast({ title: 'Erreur lors de la commande', variant: 'destructive' });
       }
     } catch (e: any) {
-      toast({ title: e?.data?.detail || e?.message || 'Erreur lors de la commande', variant: 'destructive' });
+      toast({ title: e?.response?.data?.detail || e?.data?.detail || e?.message || 'Erreur lors de la commande', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

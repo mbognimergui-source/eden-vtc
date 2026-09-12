@@ -52,7 +52,7 @@ export function extractErrorMessage(error: unknown, fallback: string): string {
     response?: { data?: { detail?: string } };
     message?: string;
   };
-  return e?.data?.detail || e?.response?.data?.detail || e?.message || fallback;
+  return e?.response?.data?.detail || e?.data?.detail || e?.message || fallback;
 }
 
 /** Affichage local d'un numéro camerounais : +237 6XX XX XX XX */

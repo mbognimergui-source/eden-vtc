@@ -66,7 +66,7 @@ export default function AIChatbot() {
         setSuggestions(response.data.suggestions);
       }
     } catch (error: any) {
-      const errMsg = error?.data?.detail || error?.message || 'Erreur de communication';
+      const errMsg = error?.response?.data?.detail || error?.data?.detail || error?.message || 'Erreur de communication';
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: 'Désolé, je rencontre un problème. Veuillez réessayer.',
