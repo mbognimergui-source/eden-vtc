@@ -1,7 +1,7 @@
 # Project Summary
 EDEN VTC est une plateforme de réservation et de suivi de courses prépayées destinée aux villes africaines. Elle permet aux passagers de commander une course, suivre son état et sa position GPS, gérer leur portefeuille et recevoir des alertes. L’accès passager utilise un numéro camerounais et un code OTP SMS, tandis que la tarification est désormais calculée et contrôlée exclusivement par le serveur.
 
-La zone actuellement desservie est limitée à Douala dans un rayon de 35 km. Les courses sans chauffeur disponible restent en attente. Le paiement portefeuille demeure simulé jusqu’à l’intégration d’Orange Money et de MTN MoMo.
+La zone actuellement desservie est limitée à Douala dans un rayon de 35 km. Les courses sans chauffeur disponible restent en attente. Le paiement portefeuille reste simulé par défaut ; le rechargement réel via Orange Money (OMAPI) est disponible dès que `PAYMENT_LIVE_MODE` et les identifiants Orange Money sont configurés côté serveur. L'intégration MTN MoMo reste à brancher.
 
 # Project Module Description
 - **Application passager**
@@ -32,8 +32,9 @@ La zone actuellement desservie est limitée à Douala dans un rayon de 35 km. Le
   - Zone limitée à Douala et à un rayon de 35 km.
 - **Portefeuille et paiements**
   - Gestion du solde, de la dette et des alertes.
-  - Paiement actuellement simulé et signalé comme tel.
-  - Intégrations Orange Money et MTN MoMo non encore branchées.
+  - Rechargement simulé par défaut (mode test), signalé comme tel côté client.
+  - Rechargement réel via Orange Money (OMAPI Merchant Payment) : le client confirme sur son téléphone, le portefeuille n'est crédité qu'après confirmation par Orange (jamais sur la foi d'un montant envoyé par le client).
+  - Intégration MTN MoMo non encore branchée.
 - **Administration et sécurité**
   - Authentification JWT applicative conservée.
   - Ancien parcours navigateur SSO/OIDC retiré, avec routes historiques refusées explicitement.
@@ -108,6 +109,7 @@ La zone actuellement desservie est limitée à Douala dans un rayon de 35 km. Le
 - **Tarification** : service métier serveur dédié.
 - **SDK** : `@metagptx/web-sdk`.
 - **Intégration SMS** : API REST Twilio via `httpx`.
+- **Intégration paiement** : API REST Orange Money (OMAPI Merchant Payment) via `httpx`.
 
 # Usage
 1. Installer les dépendances backend depuis `app/backend/`.
@@ -125,5 +127,7 @@ La zone actuellement desservie est limitée à Douala dans un rayon de 35 km. Le
 13. Tester les commandes dans et hors de la zone de Douala.
 14. Tester le dispatch sans chauffeur, puis avec un chauffeur réel disponible.
 15. Vérifier le comportement du portefeuille et l’indication du paiement simulé.
-16. Tester la pause globale des sondages sur HTTP 429 et la reprise après `retry_after`.
-17. Exécuter la compilation backend, le lint frontend et le build de production.
+16. Pour activer le rechargement réel Orange Money : créer une application sur https://apiis.orange.cm/store/, générer les clés Sandbox (`ORANGE_MONEY_CLIENT_ID`/`ORANGE_MONEY_CLIENT_SECRET`), renseigner `ORANGE_MONEY_X_AUTH_TOKEN`/`ORANGE_MONEY_MERCHANT_MSISDN`/`ORANGE_MONEY_MERCHANT_PIN` (valeurs de test fournies dans le Guide Utilisateur OMAPI si aucune autre n'a été communiquée), puis activer `PAYMENT_LIVE_MODE=true`. Vérifier `/api/v1/payment/config` avant de tester.
+17. Tester le rechargement Orange Money : la course/le portefeuille ne doit être crédité qu'après confirmation du statut `SUCCESSFULL` (polling ou webhook `notifUrl`), jamais avant.
+18. Tester la pause globale des sondages sur HTTP 429 et la reprise après `retry_after`.
+19. Exécuter la compilation backend, le lint frontend et le build de production.

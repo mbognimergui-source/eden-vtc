@@ -18,17 +18,17 @@ import os
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from services.orange_money import REQUIRED_ENV_KEYS as ORANGE_MONEY_REQUIRED_ENV_KEYS
+
 router = APIRouter(prefix="/api/v1/payment", tags=["payment-config"])
 logger = logging.getLogger(__name__)
 
 # Identifiants attendus par fournisseur. Un fournisseur est considéré comme
-# configuré uniquement si TOUTES ses variables sont renseignées.
+# configuré uniquement si TOUTES ses variables sont renseignées. Pour Orange
+# Money, la liste vient de services/orange_money.py (source unique de vérité)
+# pour éviter que les deux listes divergent.
 PROVIDER_ENV_KEYS: dict[str, tuple[str, ...]] = {
-    "orange_money": (
-        "ORANGE_MONEY_CLIENT_ID",
-        "ORANGE_MONEY_CLIENT_SECRET",
-        "ORANGE_MONEY_MERCHANT_ID",
-    ),
+    "orange_money": ORANGE_MONEY_REQUIRED_ENV_KEYS,
     "mtn_momo": (
         "MTN_MOMO_SUBSCRIPTION_KEY",
         "MTN_MOMO_API_USER",

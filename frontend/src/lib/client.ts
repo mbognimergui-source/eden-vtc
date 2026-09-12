@@ -4,6 +4,6 @@ import { createClient } from '@metagptx/web-sdk';
 // correct uniquement quand le frontend et le backend sont servis depuis le
 // même domaine. Quand ils sont déployés séparément (ex. Vercel + Railway),
 // VITE_API_BASE_URL doit pointer vers l'URL publique du backend.
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/';
+export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/';
 
 export const client = createClient({ baseURL: apiBaseUrl });
