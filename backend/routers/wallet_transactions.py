@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_current_user
+from schemas.auth import UserResponse
 from services.wallet_transactions import Wallet_transactionsService
 
 # Set up logging
@@ -92,6 +94,7 @@ async def query_wallet_transactionss(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Query wallet_transactionss with filtering, sorting, and pagination"""
     logger.debug(f"Querying wallet_transactionss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -132,6 +135,7 @@ async def query_wallet_transactionss_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     # Query wallet_transactionss with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying wallet_transactionss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -169,6 +173,7 @@ async def get_wallet_transactions(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Get a single wallet_transactions by ID"""
     logger.debug(f"Fetching wallet_transactions with id: {id}, fields={fields}")
@@ -192,6 +197,7 @@ async def get_wallet_transactions(
 async def create_wallet_transactions(
     data: Wallet_transactionsData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create a new wallet_transactions"""
     logger.debug(f"Creating new wallet_transactions with data: {data}")
@@ -216,6 +222,7 @@ async def create_wallet_transactions(
 async def create_wallet_transactionss_batch(
     request: Wallet_transactionsBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create multiple wallet_transactionss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} wallet_transactionss")
@@ -241,6 +248,7 @@ async def create_wallet_transactionss_batch(
 async def update_wallet_transactionss_batch(
     request: Wallet_transactionsBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update multiple wallet_transactionss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} wallet_transactionss")
@@ -269,6 +277,7 @@ async def update_wallet_transactions(
     id: int,
     data: Wallet_transactionsUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update an existing wallet_transactions"""
     logger.debug(f"Updating wallet_transactions {id} with data: {data}")
@@ -298,6 +307,7 @@ async def update_wallet_transactions(
 async def delete_wallet_transactionss_batch(
     request: Wallet_transactionsBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete multiple wallet_transactionss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} wallet_transactionss")
@@ -323,6 +333,7 @@ async def delete_wallet_transactionss_batch(
 async def delete_wallet_transactions(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete a single wallet_transactions by ID"""
     logger.debug(f"Deleting wallet_transactions with id: {id}")

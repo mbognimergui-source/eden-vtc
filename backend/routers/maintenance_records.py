@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_current_user
+from schemas.auth import UserResponse
 from services.maintenance_records import Maintenance_recordsService
 
 # Set up logging
@@ -101,6 +103,7 @@ async def query_maintenance_recordss(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Query maintenance_recordss with filtering, sorting, and pagination"""
     logger.debug(f"Querying maintenance_recordss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -141,6 +144,7 @@ async def query_maintenance_recordss_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     # Query maintenance_recordss with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying maintenance_recordss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -178,6 +182,7 @@ async def get_maintenance_records(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Get a single maintenance_records by ID"""
     logger.debug(f"Fetching maintenance_records with id: {id}, fields={fields}")
@@ -201,6 +206,7 @@ async def get_maintenance_records(
 async def create_maintenance_records(
     data: Maintenance_recordsData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create a new maintenance_records"""
     logger.debug(f"Creating new maintenance_records with data: {data}")
@@ -225,6 +231,7 @@ async def create_maintenance_records(
 async def create_maintenance_recordss_batch(
     request: Maintenance_recordsBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create multiple maintenance_recordss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} maintenance_recordss")
@@ -250,6 +257,7 @@ async def create_maintenance_recordss_batch(
 async def update_maintenance_recordss_batch(
     request: Maintenance_recordsBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update multiple maintenance_recordss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} maintenance_recordss")
@@ -278,6 +286,7 @@ async def update_maintenance_records(
     id: int,
     data: Maintenance_recordsUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update an existing maintenance_records"""
     logger.debug(f"Updating maintenance_records {id} with data: {data}")
@@ -307,6 +316,7 @@ async def update_maintenance_records(
 async def delete_maintenance_recordss_batch(
     request: Maintenance_recordsBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete multiple maintenance_recordss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} maintenance_recordss")
@@ -332,6 +342,7 @@ async def delete_maintenance_recordss_batch(
 async def delete_maintenance_records(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete a single maintenance_records by ID"""
     logger.debug(f"Deleting maintenance_records with id: {id}")

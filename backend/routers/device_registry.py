@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_current_user
+from schemas.auth import UserResponse
 from services.device_registry import Device_registryService
 
 # Set up logging
@@ -98,6 +100,7 @@ async def query_device_registrys(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Query device_registrys with filtering, sorting, and pagination"""
     logger.debug(f"Querying device_registrys: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -138,6 +141,7 @@ async def query_device_registrys_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     # Query device_registrys with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying device_registrys: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -175,6 +179,7 @@ async def get_device_registry(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Get a single device_registry by ID"""
     logger.debug(f"Fetching device_registry with id: {id}, fields={fields}")
@@ -198,6 +203,7 @@ async def get_device_registry(
 async def create_device_registry(
     data: Device_registryData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create a new device_registry"""
     logger.debug(f"Creating new device_registry with data: {data}")
@@ -222,6 +228,7 @@ async def create_device_registry(
 async def create_device_registrys_batch(
     request: Device_registryBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create multiple device_registrys in a single request"""
     logger.debug(f"Batch creating {len(request.items)} device_registrys")
@@ -247,6 +254,7 @@ async def create_device_registrys_batch(
 async def update_device_registrys_batch(
     request: Device_registryBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update multiple device_registrys in a single request"""
     logger.debug(f"Batch updating {len(request.items)} device_registrys")
@@ -275,6 +283,7 @@ async def update_device_registry(
     id: int,
     data: Device_registryUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update an existing device_registry"""
     logger.debug(f"Updating device_registry {id} with data: {data}")
@@ -304,6 +313,7 @@ async def update_device_registry(
 async def delete_device_registrys_batch(
     request: Device_registryBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete multiple device_registrys by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} device_registrys")
@@ -329,6 +339,7 @@ async def delete_device_registrys_batch(
 async def delete_device_registry(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete a single device_registry by ID"""
     logger.debug(f"Deleting device_registry with id: {id}")

@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_current_user
+from schemas.auth import UserResponse
 from services.rides import RidesService
 
 # Set up logging
@@ -143,6 +145,7 @@ async def query_ridess(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Query ridess with filtering, sorting, and pagination"""
     logger.debug(f"Querying ridess: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -183,6 +186,7 @@ async def query_ridess_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     # Query ridess with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying ridess: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -220,6 +224,7 @@ async def get_rides(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Get a single rides by ID"""
     logger.debug(f"Fetching rides with id: {id}, fields={fields}")
@@ -243,6 +248,7 @@ async def get_rides(
 async def create_rides(
     data: RidesData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create a new rides"""
     logger.debug(f"Creating new rides with data: {data}")
@@ -267,6 +273,7 @@ async def create_rides(
 async def create_ridess_batch(
     request: RidesBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create multiple ridess in a single request"""
     logger.debug(f"Batch creating {len(request.items)} ridess")
@@ -292,6 +299,7 @@ async def create_ridess_batch(
 async def update_ridess_batch(
     request: RidesBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update multiple ridess in a single request"""
     logger.debug(f"Batch updating {len(request.items)} ridess")
@@ -320,6 +328,7 @@ async def update_rides(
     id: int,
     data: RidesUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update an existing rides"""
     logger.debug(f"Updating rides {id} with data: {data}")
@@ -349,6 +358,7 @@ async def update_rides(
 async def delete_ridess_batch(
     request: RidesBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete multiple ridess by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} ridess")
@@ -374,6 +384,7 @@ async def delete_ridess_batch(
 async def delete_rides(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete a single rides by ID"""
     logger.debug(f"Deleting rides with id: {id}")

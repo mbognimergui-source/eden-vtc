@@ -55,6 +55,13 @@ class FakeScalarResult:
         return self._value
 
 
+class FakeUpdateResult:
+    """Simule le résultat d'un db.execute(update(...)) : seul .rowcount est utilisé."""
+
+    def __init__(self, rowcount=1):
+        self.rowcount = rowcount
+
+
 class FakeDb:
     """Simule une AsyncSession : execute() renvoie une valeur préconfigurée,
     add()/commit()/refresh() sont enregistrés sans effet réel."""
@@ -73,6 +80,9 @@ class FakeDb:
     async def commit(self):
         self.committed += 1
 
+    async def rollback(self):
+        pass
+
     async def refresh(self, _obj):
         pass
 
@@ -87,7 +97,8 @@ class FakePassenger:
 
 
 class FakePayment:
-    def __init__(self, passenger_id=1, amount=5000, pay_token="MP_TEST_TOKEN", order_id="EDENVTC-TEST1", status="pending", credited=False):
+    def __init__(self, passenger_id=1, amount=5000, pay_token="MP_TEST_TOKEN", order_id="EDENVTC-TEST1", status="pending", credited=False, payment_id=1):
+        self.id = payment_id
         self.passenger_id = passenger_id
         self.amount = amount
         self.pay_token = pay_token
@@ -322,7 +333,7 @@ class TestApplyConfirmedResult:
     async def test_credits_full_amount_when_no_debt(self):
         passenger = FakePassenger(wallet_balance=1000, has_pending_debt=False, debt_amount=0)
         payment = FakePayment(amount=5000)
-        db = FakeDb(execute_results=[FakeScalarResult(passenger)])
+        db = FakeDb(execute_results=[FakeUpdateResult(rowcount=1), FakeScalarResult(passenger)])
 
         new_balance = await omp._apply_confirmed_result(db, payment, provider_txn_id="TXN1")
 
@@ -344,7 +355,7 @@ class TestApplyConfirmedResult:
         épongée en premier, le reste (3000) crédite le solde."""
         passenger = FakePassenger(wallet_balance=0, has_pending_debt=True, debt_amount=2000)
         payment = FakePayment(amount=5000)
-        db = FakeDb(execute_results=[FakeScalarResult(passenger)])
+        db = FakeDb(execute_results=[FakeUpdateResult(rowcount=1), FakeScalarResult(passenger)])
 
         new_balance = await omp._apply_confirmed_result(db, payment, provider_txn_id="TXN2")
 
@@ -358,7 +369,7 @@ class TestApplyConfirmedResult:
         la dette est réduite d'autant, has_pending_debt reste vrai."""
         passenger = FakePassenger(wallet_balance=0, has_pending_debt=True, debt_amount=5000)
         payment = FakePayment(amount=1000)
-        db = FakeDb(execute_results=[FakeScalarResult(passenger)])
+        db = FakeDb(execute_results=[FakeUpdateResult(rowcount=1), FakeScalarResult(passenger)])
 
         new_balance = await omp._apply_confirmed_result(db, payment, provider_txn_id="TXN3")
 
@@ -372,13 +383,28 @@ class TestApplyConfirmedResult:
         """Passager introuvable (cas limite) : ne doit pas lever, marque le
         paiement traité sans crédit fantôme."""
         payment = FakePayment(amount=5000)
-        db = FakeDb(execute_results=[FakeScalarResult(None)])
+        db = FakeDb(execute_results=[FakeUpdateResult(rowcount=1), FakeScalarResult(None)])
 
         new_balance = await omp._apply_confirmed_result(db, payment, provider_txn_id="TXN4")
 
         assert new_balance == 0
         assert payment.status == "successful"
         assert db.added == []  # aucune transaction fantôme créée
+
+    @pytest.mark.asyncio
+    async def test_losing_the_atomic_claim_credits_nothing(self):
+        """Si un appel concurrent (webhook vs polling) a déjà remporté la
+        réclamation (`credited` passé à True entre-temps), rowcount=0 : ne
+        doit surtout pas créditer une seconde fois."""
+        passenger = FakePassenger(wallet_balance=1000)
+        payment = FakePayment(amount=5000)
+        db = FakeDb(execute_results=[FakeUpdateResult(rowcount=0)])
+
+        new_balance = await omp._apply_confirmed_result(db, payment, provider_txn_id="TXN-RACE")
+
+        assert new_balance == 0
+        assert passenger.wallet_balance == 1000  # inchangé
+        assert db.added == []  # aucune transaction créée par le perdant de la course
 
 
 class TestWebhookIdempotency:

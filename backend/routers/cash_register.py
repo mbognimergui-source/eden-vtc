@@ -11,7 +11,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from dependencies.auth import get_current_user
+from dependencies.auth import get_current_user, get_admin_user
 from models.company_accounts import Company_accounts
 from models.cash_register_transactions import Cash_register_transactions
 from models.passengers import Passengers
@@ -98,7 +98,7 @@ async def record_transaction(
 @router.get("/accounts")
 async def get_accounts(
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """
     Retourne les soldes des deux comptes : encours et caisse.
@@ -155,10 +155,12 @@ async def get_accounts(
 async def process_topup(
     data: TopupRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """
-    Rechargement wallet passager.
+    Rechargement wallet passager (opération caissier/admin : crédite un
+    passenger_id arbitraire — jamais accessible aux passagers eux-mêmes,
+    qui rechargent via le flux Orange Money ou le wallet simulé).
     → Crédite le wallet du passager
     → Crédite le compte encours (l'argent est dans le système)
     """
@@ -242,10 +244,12 @@ async def process_topup(
 async def validate_ride_payment(
     data: RidePaymentRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """
-    Validation d'une commande (course terminée).
+    Validation d'une commande (course terminée) — opération caissier/admin :
+    débite un passenger_id et un montant arbitraires, jamais accessible aux
+    passagers eux-mêmes.
     → Débite le wallet du passager (compte encours diminue)
     → Crédite le compte caisse (recette validée)
     C'est le transfert encours → caisse.
@@ -351,7 +355,7 @@ async def validate_ride_payment(
 async def manual_cash_entry(
     data: ManualCashEntry,
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """
     Entrée manuelle en caisse (paiement cash direct, sans wallet).
@@ -527,7 +531,7 @@ async def get_transactions(
     limit: int = 50,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """
     Liste des mouvements de caisse (filtrable par type de compte).
@@ -577,7 +581,7 @@ async def get_transactions(
 @router.get("/summary")
 async def get_summary(
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """
     Résumé financier : total encours, total caisse, nombre de transactions aujourd'hui.

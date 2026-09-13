@@ -8,6 +8,11 @@ class Drivers(Base):
     __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True, nullable=False)
+    # Lie ce chauffeur à son compte de connexion (JWT `sub`). Nullable : les
+    # chauffeurs de démonstration seedés depuis mock_data n'en ont pas, et un
+    # chauffeur sans compte lié n'apparaît simplement dans aucune recherche
+    # "mon profil chauffeur" — il n'est jamais retenu par erreur pour un autre.
+    user_id = Column(String, index=True, nullable=True)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     phone = Column(String, nullable=False)

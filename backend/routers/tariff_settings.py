@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_admin_user
+from schemas.auth import UserResponse
 from services.tariff_settings import Tariff_settingsService
 
 # Set up logging
@@ -216,6 +218,7 @@ async def get_tariff_settings(
 async def create_tariff_settings(
     data: Tariff_settingsData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Create a new tariff_settings"""
     logger.debug(f"Creating new tariff_settings with data: {data}")
@@ -240,6 +243,7 @@ async def create_tariff_settings(
 async def create_tariff_settingss_batch(
     request: Tariff_settingsBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Create multiple tariff_settingss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} tariff_settingss")
@@ -265,6 +269,7 @@ async def create_tariff_settingss_batch(
 async def update_tariff_settingss_batch(
     request: Tariff_settingsBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Update multiple tariff_settingss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} tariff_settingss")
@@ -293,6 +298,7 @@ async def update_tariff_settings(
     id: int,
     data: Tariff_settingsUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Update an existing tariff_settings"""
     logger.debug(f"Updating tariff_settings {id} with data: {data}")
@@ -322,6 +328,7 @@ async def update_tariff_settings(
 async def delete_tariff_settingss_batch(
     request: Tariff_settingsBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Delete multiple tariff_settingss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} tariff_settingss")
@@ -347,6 +354,7 @@ async def delete_tariff_settingss_batch(
 async def delete_tariff_settings(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Delete a single tariff_settings by ID"""
     logger.debug(f"Deleting tariff_settings with id: {id}")

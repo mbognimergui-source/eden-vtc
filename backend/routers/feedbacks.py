@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
 from services.feedbacks import FeedbacksService
-from dependencies.auth import get_current_user
+from dependencies.auth import get_current_user, get_admin_user
 from schemas.auth import UserResponse
 
 # Set up logging
@@ -131,6 +131,7 @@ async def query_feedbackss_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     # Query feedbackss with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying feedbackss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")

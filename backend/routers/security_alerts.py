@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_current_user
+from schemas.auth import UserResponse
 from services.security_alerts import Security_alertsService
 
 # Set up logging
@@ -101,6 +103,7 @@ async def query_security_alertss(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Query security_alertss with filtering, sorting, and pagination"""
     logger.debug(f"Querying security_alertss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -141,6 +144,7 @@ async def query_security_alertss_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     # Query security_alertss with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying security_alertss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -178,6 +182,7 @@ async def get_security_alerts(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Get a single security_alerts by ID"""
     logger.debug(f"Fetching security_alerts with id: {id}, fields={fields}")
@@ -201,6 +206,7 @@ async def get_security_alerts(
 async def create_security_alerts(
     data: Security_alertsData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create a new security_alerts"""
     logger.debug(f"Creating new security_alerts with data: {data}")
@@ -225,6 +231,7 @@ async def create_security_alerts(
 async def create_security_alertss_batch(
     request: Security_alertsBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create multiple security_alertss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} security_alertss")
@@ -250,6 +257,7 @@ async def create_security_alertss_batch(
 async def update_security_alertss_batch(
     request: Security_alertsBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update multiple security_alertss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} security_alertss")
@@ -278,6 +286,7 @@ async def update_security_alerts(
     id: int,
     data: Security_alertsUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update an existing security_alerts"""
     logger.debug(f"Updating security_alerts {id} with data: {data}")
@@ -307,6 +316,7 @@ async def update_security_alerts(
 async def delete_security_alertss_batch(
     request: Security_alertsBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete multiple security_alertss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} security_alertss")
@@ -332,6 +342,7 @@ async def delete_security_alertss_batch(
 async def delete_security_alerts(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete a single security_alerts by ID"""
     logger.debug(f"Deleting security_alerts with id: {id}")

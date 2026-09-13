@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_current_user
+from schemas.auth import UserResponse
 from services.vehicle_positions import Vehicle_positionsService
 
 # Set up logging
@@ -101,6 +103,7 @@ async def query_vehicle_positionss(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Query vehicle_positionss with filtering, sorting, and pagination"""
     logger.debug(f"Querying vehicle_positionss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -141,6 +144,7 @@ async def query_vehicle_positionss_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     # Query vehicle_positionss with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying vehicle_positionss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -178,6 +182,7 @@ async def get_vehicle_positions(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Get a single vehicle_positions by ID"""
     logger.debug(f"Fetching vehicle_positions with id: {id}, fields={fields}")
@@ -201,6 +206,7 @@ async def get_vehicle_positions(
 async def create_vehicle_positions(
     data: Vehicle_positionsData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create a new vehicle_positions"""
     logger.debug(f"Creating new vehicle_positions with data: {data}")
@@ -225,6 +231,7 @@ async def create_vehicle_positions(
 async def create_vehicle_positionss_batch(
     request: Vehicle_positionsBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create multiple vehicle_positionss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} vehicle_positionss")
@@ -250,6 +257,7 @@ async def create_vehicle_positionss_batch(
 async def update_vehicle_positionss_batch(
     request: Vehicle_positionsBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update multiple vehicle_positionss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} vehicle_positionss")
@@ -278,6 +286,7 @@ async def update_vehicle_positions(
     id: int,
     data: Vehicle_positionsUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update an existing vehicle_positions"""
     logger.debug(f"Updating vehicle_positions {id} with data: {data}")
@@ -307,6 +316,7 @@ async def update_vehicle_positions(
 async def delete_vehicle_positionss_batch(
     request: Vehicle_positionsBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete multiple vehicle_positionss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} vehicle_positionss")
@@ -332,6 +342,7 @@ async def delete_vehicle_positionss_batch(
 async def delete_vehicle_positions(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete a single vehicle_positions by ID"""
     logger.debug(f"Deleting vehicle_positions with id: {id}")

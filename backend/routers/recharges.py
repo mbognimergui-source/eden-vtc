@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_current_user
+from schemas.auth import UserResponse
 from services.recharges import RechargesService
 
 # Set up logging
@@ -98,6 +100,7 @@ async def query_rechargess(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Query rechargess with filtering, sorting, and pagination"""
     logger.debug(f"Querying rechargess: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -138,6 +141,7 @@ async def query_rechargess_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     # Query rechargess with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying rechargess: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -175,6 +179,7 @@ async def get_recharges(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Get a single recharges by ID"""
     logger.debug(f"Fetching recharges with id: {id}, fields={fields}")
@@ -198,6 +203,7 @@ async def get_recharges(
 async def create_recharges(
     data: RechargesData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create a new recharges"""
     logger.debug(f"Creating new recharges with data: {data}")
@@ -222,6 +228,7 @@ async def create_recharges(
 async def create_rechargess_batch(
     request: RechargesBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create multiple rechargess in a single request"""
     logger.debug(f"Batch creating {len(request.items)} rechargess")
@@ -247,6 +254,7 @@ async def create_rechargess_batch(
 async def update_rechargess_batch(
     request: RechargesBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update multiple rechargess in a single request"""
     logger.debug(f"Batch updating {len(request.items)} rechargess")
@@ -275,6 +283,7 @@ async def update_recharges(
     id: int,
     data: RechargesUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update an existing recharges"""
     logger.debug(f"Updating recharges {id} with data: {data}")
@@ -304,6 +313,7 @@ async def update_recharges(
 async def delete_rechargess_batch(
     request: RechargesBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete multiple rechargess by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} rechargess")
@@ -329,6 +339,7 @@ async def delete_rechargess_batch(
 async def delete_recharges(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete a single recharges by ID"""
     logger.debug(f"Deleting recharges with id: {id}")

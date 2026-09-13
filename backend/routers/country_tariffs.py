@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_admin_user
+from schemas.auth import UserResponse
 from services.country_tariffs import Country_tariffsService
 
 # Set up logging
@@ -219,6 +221,7 @@ async def get_country_tariffs(
 async def create_country_tariffs(
     data: Country_tariffsData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Create a new country_tariffs"""
     logger.debug(f"Creating new country_tariffs with data: {data}")
@@ -243,6 +246,7 @@ async def create_country_tariffs(
 async def create_country_tariffss_batch(
     request: Country_tariffsBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Create multiple country_tariffss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} country_tariffss")
@@ -268,6 +272,7 @@ async def create_country_tariffss_batch(
 async def update_country_tariffss_batch(
     request: Country_tariffsBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Update multiple country_tariffss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} country_tariffss")
@@ -296,6 +301,7 @@ async def update_country_tariffs(
     id: int,
     data: Country_tariffsUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Update an existing country_tariffs"""
     logger.debug(f"Updating country_tariffs {id} with data: {data}")
@@ -325,6 +331,7 @@ async def update_country_tariffs(
 async def delete_country_tariffss_batch(
     request: Country_tariffsBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Delete multiple country_tariffss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} country_tariffss")
@@ -350,6 +357,7 @@ async def delete_country_tariffss_batch(
 async def delete_country_tariffs(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Delete a single country_tariffs by ID"""
     logger.debug(f"Deleting country_tariffs with id: {id}")

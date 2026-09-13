@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_current_user
+from schemas.auth import UserResponse
 from services.company_accounts import Company_accountsService
 
 # Set up logging
@@ -86,6 +88,7 @@ async def query_company_accountss(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Query company_accountss with filtering, sorting, and pagination"""
     logger.debug(f"Querying company_accountss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -126,6 +129,7 @@ async def query_company_accountss_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     # Query company_accountss with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying company_accountss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -163,6 +167,7 @@ async def get_company_accounts(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Get a single company_accounts by ID"""
     logger.debug(f"Fetching company_accounts with id: {id}, fields={fields}")
@@ -186,6 +191,7 @@ async def get_company_accounts(
 async def create_company_accounts(
     data: Company_accountsData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create a new company_accounts"""
     logger.debug(f"Creating new company_accounts with data: {data}")
@@ -210,6 +216,7 @@ async def create_company_accounts(
 async def create_company_accountss_batch(
     request: Company_accountsBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create multiple company_accountss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} company_accountss")
@@ -235,6 +242,7 @@ async def create_company_accountss_batch(
 async def update_company_accountss_batch(
     request: Company_accountsBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update multiple company_accountss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} company_accountss")
@@ -263,6 +271,7 @@ async def update_company_accounts(
     id: int,
     data: Company_accountsUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update an existing company_accounts"""
     logger.debug(f"Updating company_accounts {id} with data: {data}")
@@ -292,6 +301,7 @@ async def update_company_accounts(
 async def delete_company_accountss_batch(
     request: Company_accountsBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete multiple company_accountss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} company_accountss")
@@ -317,6 +327,7 @@ async def delete_company_accountss_batch(
 async def delete_company_accounts(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete a single company_accounts by ID"""
     logger.debug(f"Deleting company_accounts with id: {id}")

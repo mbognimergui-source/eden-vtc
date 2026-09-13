@@ -23,7 +23,7 @@ from typing import Optional
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
@@ -160,7 +160,23 @@ async def initiate_topup(
 
 async def _apply_confirmed_result(db: AsyncSession, payment: Orange_money_payments, *, provider_txn_id: Optional[str]) -> int:
     """Crédite le portefeuille pour un paiement confirmé SUCCESSFULL, une
-    seule fois (idempotent via `credited`). Retourne le nouveau solde."""
+    seule fois (idempotent via `credited`). Retourne le nouveau solde.
+
+    Réclamation atomique avant tout effet de bord : le webhook Orange et le
+    polling de statut peuvent arriver quasi simultanément et tous deux lire
+    `credited=False` avant que l'un des deux ne committe. La clause WHERE
+    revérifie `credited=False` au moment de l'écriture elle-même ; seul
+    l'appelant qui gagne la course crédite réellement le portefeuille."""
+    claim_result = await db.execute(
+        update(Orange_money_payments)
+        .where(Orange_money_payments.id == payment.id, Orange_money_payments.credited.is_(False))
+        .values(status="successful", credited=True, provider_txn_id=provider_txn_id)
+    )
+    if claim_result.rowcount == 0:
+        # Un appel concurrent a déjà remporté la réclamation et crédité ce paiement.
+        await db.rollback()
+        return 0
+
     passenger_result = await db.execute(select(Passengers).where(Passengers.id == payment.passenger_id))
     passenger = passenger_result.scalar_one_or_none()
     if not passenger:

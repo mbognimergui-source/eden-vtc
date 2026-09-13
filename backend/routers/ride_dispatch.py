@@ -482,16 +482,32 @@ async def accept_ride(
                 detail="Cette course n'est plus disponible. Elle a déjà été acceptée par un autre chauffeur."
             )
 
-        # Assign ride to driver
-        ride.driver_id = driver.id
-        ride.vehicle_id = driver.vehicle_id
-        ride.status = "accepted"
+        # Assignation atomique : la clause WHERE revérifie l'état au moment de
+        # l'écriture elle-même (pas seulement au SELECT ci-dessus), pour éviter
+        # que deux chauffeurs acceptent la même course simultanément (TOCTOU) —
+        # une seule des deux requêtes concurrentes peut affecter une ligne.
+        update_result = await db.execute(
+            update(Rides)
+            .where(
+                and_(
+                    Rides.id == data.ride_id,
+                    Rides.status == "pending",
+                    Rides.driver_id.is_(None),
+                )
+            )
+            .values(driver_id=driver.id, vehicle_id=driver.vehicle_id, status="accepted")
+        )
+        if update_result.rowcount == 0:
+            await db.rollback()
+            raise HTTPException(
+                status_code=409,
+                detail="Cette course n'est plus disponible. Elle a déjà été acceptée par un autre chauffeur."
+            )
 
         # Update driver status to on_ride
         driver.status = "on_ride"
 
         await db.commit()
-        await db.refresh(ride)
 
         logger.info(f"Ride {ride.id} accepted by driver {driver.id} (user {current_user.id})")
 

@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_current_user
+from schemas.auth import UserResponse
 from services.cash_register_transactions import Cash_register_transactionsService
 
 # Set up logging
@@ -95,6 +97,7 @@ async def query_cash_register_transactionss(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Query cash_register_transactionss with filtering, sorting, and pagination"""
     logger.debug(f"Querying cash_register_transactionss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -135,6 +138,7 @@ async def query_cash_register_transactionss_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     # Query cash_register_transactionss with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying cash_register_transactionss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -172,6 +176,7 @@ async def get_cash_register_transactions(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Get a single cash_register_transactions by ID"""
     logger.debug(f"Fetching cash_register_transactions with id: {id}, fields={fields}")
@@ -195,6 +200,7 @@ async def get_cash_register_transactions(
 async def create_cash_register_transactions(
     data: Cash_register_transactionsData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create a new cash_register_transactions"""
     logger.debug(f"Creating new cash_register_transactions with data: {data}")
@@ -219,6 +225,7 @@ async def create_cash_register_transactions(
 async def create_cash_register_transactionss_batch(
     request: Cash_register_transactionsBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create multiple cash_register_transactionss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} cash_register_transactionss")
@@ -244,6 +251,7 @@ async def create_cash_register_transactionss_batch(
 async def update_cash_register_transactionss_batch(
     request: Cash_register_transactionsBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update multiple cash_register_transactionss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} cash_register_transactionss")
@@ -272,6 +280,7 @@ async def update_cash_register_transactions(
     id: int,
     data: Cash_register_transactionsUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update an existing cash_register_transactions"""
     logger.debug(f"Updating cash_register_transactions {id} with data: {data}")
@@ -301,6 +310,7 @@ async def update_cash_register_transactions(
 async def delete_cash_register_transactionss_batch(
     request: Cash_register_transactionsBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete multiple cash_register_transactionss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} cash_register_transactionss")
@@ -326,6 +336,7 @@ async def delete_cash_register_transactionss_batch(
 async def delete_cash_register_transactions(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete a single cash_register_transactions by ID"""
     logger.debug(f"Deleting cash_register_transactions with id: {id}")

@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_current_user
+from schemas.auth import UserResponse
 from services.drivers import DriversService
 
 # Set up logging
@@ -20,6 +22,7 @@ router = APIRouter(prefix="/api/v1/entities/drivers", tags=["drivers"])
 # ---------- Pydantic Schemas ----------
 class DriversData(BaseModel):
     """Entity data schema (for create/update)"""
+    user_id: str = None
     first_name: str
     last_name: str
     phone: str
@@ -39,6 +42,7 @@ class DriversData(BaseModel):
 
 class DriversUpdateData(BaseModel):
     """Update entity data (partial updates allowed)"""
+    user_id: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone: Optional[str] = None
@@ -59,6 +63,7 @@ class DriversUpdateData(BaseModel):
 class DriversResponse(BaseModel):
     """Entity response schema"""
     id: int
+    user_id: Optional[str] = None
     first_name: str
     last_name: str
     phone: str
@@ -119,6 +124,7 @@ async def query_driverss(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Query driverss with filtering, sorting, and pagination"""
     logger.debug(f"Querying driverss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -159,6 +165,7 @@ async def query_driverss_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     # Query driverss with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying driverss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -196,6 +203,7 @@ async def get_drivers(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Get a single drivers by ID"""
     logger.debug(f"Fetching drivers with id: {id}, fields={fields}")
@@ -219,6 +227,7 @@ async def get_drivers(
 async def create_drivers(
     data: DriversData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create a new drivers"""
     logger.debug(f"Creating new drivers with data: {data}")
@@ -243,6 +252,7 @@ async def create_drivers(
 async def create_driverss_batch(
     request: DriversBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Create multiple driverss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} driverss")
@@ -268,6 +278,7 @@ async def create_driverss_batch(
 async def update_driverss_batch(
     request: DriversBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update multiple driverss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} driverss")
@@ -296,6 +307,7 @@ async def update_drivers(
     id: int,
     data: DriversUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Update an existing drivers"""
     logger.debug(f"Updating drivers {id} with data: {data}")
@@ -325,6 +337,7 @@ async def update_drivers(
 async def delete_driverss_batch(
     request: DriversBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete multiple driverss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} driverss")
@@ -350,6 +363,7 @@ async def delete_driverss_batch(
 async def delete_drivers(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
 ):
     """Delete a single drivers by ID"""
     logger.debug(f"Deleting drivers with id: {id}")

@@ -7,7 +7,7 @@ Déclenche des alertes admin pour les mouvements importants.
 import logging
 from typing import Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.rides import Rides
@@ -89,7 +89,31 @@ async def complete_ride_and_transfer(
             "error": "invalid_status",
         }
 
-    # Marquer comme terminée
+    # Réclamation atomique : la clause WHERE revérifie le statut au moment de
+    # l'écriture elle-même, pas seulement au SELECT ci-dessus. Sans ça, deux
+    # appels concurrents (double-tap, retry après timeout, webhook + polling)
+    # peuvent tous les deux passer les vérifications de statut ci-dessus puis
+    # exécuter le débit wallet / crédit caisse deux fois pour la même course.
+    # Une seule requête concurrente peut affecter la ligne ; l'autre sait
+    # qu'elle a perdu la course et s'arrête sans rien débiter/créditer.
+    claim_result = await db.execute(
+        update(Rides).where(Rides.id == ride_id, Rides.status == ride.status).values(status="completed")
+    )
+    if claim_result.rowcount == 0:
+        await db.rollback()
+        refreshed = await db.execute(select(Rides).where(Rides.id == ride_id))
+        current = refreshed.scalar_one_or_none()
+        return {
+            "success": True,
+            "ride_id": ride_id,
+            "status": current.status if current else "unknown",
+            "message": "Course déjà terminée par une requête concurrente.",
+            "already_completed": True,
+            "payment": None,
+        }
+
+    # Marquer comme terminée (déjà fait en base par la réclamation ci-dessus ;
+    # mise à jour de l'objet en mémoire pour le reste de la fonction).
     ride.status = "completed"
 
     # Libérer le chauffeur
