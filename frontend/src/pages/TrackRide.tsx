@@ -8,6 +8,7 @@ import { ArrowLeft, Phone, MessageSquare, Navigation, MapPin, Clock, Car, Shield
 import { useCountryTariff } from '@/hooks/useCountryTariff';
 import RideMap from '@/components/RideMap';
 import SharePosition from '@/components/SharePosition';
+import SosButton from '@/components/SosButton';
 import { useVehicleTracking } from '@/hooks/useVehicleTracking';
 import { useRideNotifications } from '@/hooks/useRideNotifications';
 import { useTrustScore } from '@/hooks/useTrustScore';
@@ -778,6 +779,19 @@ export default function TrackRide() {
           )}
         </div>
       </div>
+
+      {/* Bouton SOS : accessible tant que la course n'est pas terminée */}
+      {rideId > 0 && phase !== 'completed' && (
+        <SosButton
+          rideId={rideId}
+          driverName={ride.driver.name}
+          driverPlate={ride.driver.plate}
+          pickupName={ride.pickup.name}
+          destinationName={ride.destination.name}
+          currentLat={userGpsPosition?.lat ?? driverPos.lat}
+          currentLng={userGpsPosition?.lng ?? driverPos.lng}
+        />
+      )}
     </div>
   );
 }

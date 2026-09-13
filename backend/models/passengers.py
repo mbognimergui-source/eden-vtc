@@ -18,5 +18,8 @@ class Passengers(Base):
     debt_amount = Column(Integer, nullable=True)
     total_rides = Column(Integer, nullable=True)
     co2_saved = Column(Float, nullable=True)
+    # Contact de confiance prévenu en cas d'alerte SOS (bouton d'urgence).
+    emergency_contact_name = Column(String, nullable=True)
+    emergency_contact_phone = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.now)
     updated_at = Column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
