@@ -19,7 +19,7 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { useCountryTariff } from '@/hooks/useCountryTariff';
 import { useTrafficData } from '@/hooks/useTrafficData';
 import { EDEN_CITIES, haversineDistance, reverseGeocode, getPositionWithFallback } from '@/lib/geolocation';
-import { nearbyNeighborhoods } from '@/lib/doualaNeighborhoods';
+import { nearbyNeighborhoods } from '@/lib/neighborhoods';
 import BottomNav from '@/components/BottomNav';
 import { useRideStatus, requestNotificationPermission } from '@/hooks/useRideStatus';
 import { useNearbyDrivers } from '@/hooks/useNearbyDrivers';
@@ -106,7 +106,7 @@ export default function BookRide() {
   // Quartiers de Douala à moins de 10 km du point de départ (ou du centre-ville
   // tant que le départ n'est pas encore connu), proposés comme destinations
   // rapides sous le champ Destination.
-  const NEARBY_DESTINATION_RADIUS_KM = 10;
+  const NEARBY_DESTINATION_RADIUS_KM = 15;
   const nearbyDestinations = useMemo(() => {
     const centerLat = pickupCoords?.lat ?? cityCenter.lat;
     const centerLng = pickupCoords?.lng ?? cityCenter.lng;
