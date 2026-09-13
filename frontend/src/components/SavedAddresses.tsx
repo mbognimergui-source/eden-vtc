@@ -140,12 +140,13 @@ export default function SavedAddresses({ onSelect, compact = false }: SavedAddre
     }
   };
 
-  if (loading) {
-    return null; // Don't show anything while loading
-  }
-
-  // Compact mode: just show quick-select buttons
-  if (compact && addresses.length > 0) {
+  // Compact mode is always the terminal case, chargement compris : on
+  // n'affiche jamais le panneau complet ("Aucune adresse sauvegardée...")
+  // à sa place, ce qui décalerait tout ce qui suit (notamment le champ de
+  // saisie manuelle juste à côté). Pendant le chargement, `addresses` est
+  // simplement encore vide : seul le bouton "+" est visible, sans saut de
+  // mise en page une fois les adresses chargées.
+  if (compact) {
     return (
       <div className="flex flex-wrap gap-1.5">
         {addresses.slice(0, 4).map((addr) => {
@@ -191,6 +192,10 @@ export default function SavedAddresses({ onSelect, compact = false }: SavedAddre
         </Dialog>
       </div>
     );
+  }
+
+  if (loading) {
+    return null; // Mode complet uniquement : rien à afficher pendant le chargement.
   }
 
   // Full mode: show list with management options

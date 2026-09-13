@@ -28,24 +28,32 @@ import DebtAlertBanner from '@/components/DebtAlertBanner';
 // Geocode an address using Nominatim (free, works worldwide in Africa)
 const NOMINATIM_SEARCH = 'https://nominatim.openstreetmap.org/search';
 
+class GeocodeError extends Error {}
+
+/**
+ * Géocode une adresse saisie manuellement. Lève GeocodeError si Nominatim ne
+ * trouve rien ou si la requête échoue — l'appelant doit prévenir l'utilisateur
+ * plutôt que de commander une course vers un point inventé (un ancien repli
+ * "coordonnées aléatoires près du centre-ville" produisait des trajets
+ * silencieusement faux, sans aucune indication que l'adresse était introuvable).
+ */
 async function geocodeAddress(address: string, cityCenter: { lat: number; lng: number }): Promise<{ lat: number; lng: number }> {
+  let res: Response;
   try {
-    const res = await fetch(
+    res = await fetch(
       `${NOMINATIM_SEARCH}?q=${encodeURIComponent(address)}&format=json&limit=1&viewbox=${cityCenter.lng - 0.2},${cityCenter.lat + 0.2},${cityCenter.lng + 0.2},${cityCenter.lat - 0.2}&bounded=1`,
       { headers: { 'User-Agent': 'EDEN-VTC-App/1.0' } }
     );
-    const data = await res.json();
-    if (data && data.length > 0) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-    }
   } catch {
-    // Fallback below
+    throw new GeocodeError('Impossible de contacter le service de géocodage. Vérifiez votre connexion.');
   }
-  // Fallback: random offset from city center
-  return {
-    lat: cityCenter.lat + (Math.random() - 0.5) * 0.04,
-    lng: cityCenter.lng + (Math.random() - 0.5) * 0.04,
-  };
+  const data = await res.json();
+  if (data && data.length > 0) {
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  }
+  throw new GeocodeError(
+    `Adresse introuvable : "${address}". Soyez plus précis ou choisissez un quartier proposé.`
+  );
 }
 
 export default function BookRide() {
@@ -225,8 +233,9 @@ export default function BookRide() {
       setEstimatedDuration(duration);
       setEstimatedPrice(price);
       setCo2Saved(co2);
-    } catch {
-      toast({ title: 'Erreur lors du calcul de l\'itinéraire', variant: 'destructive' });
+    } catch (e) {
+      const message = e instanceof GeocodeError ? e.message : 'Erreur lors du calcul de l\'itinéraire';
+      toast({ title: message, variant: 'destructive' });
     } finally {
       setEstimating(false);
     }
