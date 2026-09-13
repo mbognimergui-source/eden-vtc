@@ -48,7 +48,7 @@ class GenTxtRequest(BaseModel):
     """Generate Text request parameters."""
 
     messages: List[ChatMessage] = Field(..., description="Conversation messages list.")
-    model: str = Field(default="deepseek-v4-pro", description="Model name")
+    model: str = Field(default="deepseek-chat", description="Model name")
     stream: bool = Field(default=False, description="Whether to enable streaming output.")
     temperature: Optional[float] = Field(default=0.7, description="Sampling temperature (0-2).")
     max_tokens: Optional[int] = Field(default=4096, description="Maximum number of generated tokens.")

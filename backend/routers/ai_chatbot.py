@@ -146,7 +146,7 @@ async def ask_chatbot(
 
         request = GenTxtRequest(
             messages=messages,
-            model="gpt-5.4",
+            model="deepseek-chat",
         )
 
         response = await service.gentxt(request)
