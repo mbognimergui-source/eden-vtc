@@ -18,6 +18,7 @@ from models.drivers import Drivers
 from models.vehicle_positions import Vehicle_positions
 from schemas.auth import UserResponse
 from services import service_areas
+from services.trust_score import compute_driver_trust_score
 
 logger = logging.getLogger(__name__)
 
@@ -897,4 +898,28 @@ async def rate_passenger(
     except Exception as e:
         await db.rollback()
         logger.error(f"Error rating passenger for ride {ride_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
+
+@router.get("/trust-score/{driver_id}")
+async def get_trust_score(
+    driver_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
+):
+    """EDEN Trust Score : score de confiance transparent pour un chauffeur,
+    calculé à partir de sa note moyenne, son expérience et sa fiabilité.
+    Affiché au passager pendant le suivi de sa course."""
+    try:
+        driver_result = await db.execute(select(Drivers).where(Drivers.id == driver_id))
+        driver = driver_result.scalar_one_or_none()
+        if not driver:
+            raise HTTPException(status_code=404, detail="Chauffeur introuvable.")
+
+        trust_score = await compute_driver_trust_score(db, driver)
+        return {"driver_id": driver.id, **trust_score}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error computing trust score for driver {driver_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")

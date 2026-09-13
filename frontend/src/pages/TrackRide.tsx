@@ -4,14 +4,53 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Phone, MessageSquare, Navigation, MapPin, Clock, Car, Shield, Star, Wifi, WifiOff, RefreshCw, Bell, BellRing } from 'lucide-react';
+import { ArrowLeft, Phone, MessageSquare, Navigation, MapPin, Clock, Car, Shield, ShieldAlert, Star, Wifi, WifiOff, RefreshCw, Bell, BellRing } from 'lucide-react';
 import { useCountryTariff } from '@/hooks/useCountryTariff';
 import RideMap from '@/components/RideMap';
 import SharePosition from '@/components/SharePosition';
 import { useVehicleTracking } from '@/hooks/useVehicleTracking';
 import { useRideNotifications } from '@/hooks/useRideNotifications';
+import { useTrustScore } from '@/hooks/useTrustScore';
 import { reverseGeocode } from '@/lib/geolocation';
 import { client } from '@/lib/client';
+
+/**
+ * Distance perpendiculaire (en mètres) entre un point et le segment
+ * pickup→destination, via une projection plane simple (précise à l'échelle
+ * d'une ville). Sert de base à la veille anti-déviation d'itinéraire :
+ * calculée en direct côté client à partir de données déjà chargées (position
+ * GPS du véhicule + trajet), sans appel réseau supplémentaire.
+ */
+function perpendicularDistanceToRouteMeters(
+  pLat: number, pLng: number,
+  aLat: number, aLng: number,
+  bLat: number, bLng: number
+): number {
+  const latRef = (aLat + bLat) / 2;
+  const mPerDegLat = 111320;
+  const mPerDegLng = 111320 * Math.cos((latRef * Math.PI) / 180);
+
+  const toXY = (lat: number, lng: number) => ({
+    x: (lng - aLng) * mPerDegLng,
+    y: (lat - aLat) * mPerDegLat,
+  });
+
+  const A = { x: 0, y: 0 };
+  const B = toXY(bLat, bLng);
+  const P = toXY(pLat, pLng);
+
+  const ABx = B.x - A.x;
+  const ABy = B.y - A.y;
+  const APx = P.x - A.x;
+  const APy = P.y - A.y;
+  const abLenSq = ABx * ABx + ABy * ABy;
+  const t = abLenSq > 0 ? Math.max(0, Math.min(1, (APx * ABx + APy * ABy) / abLenSq)) : 0;
+  const closestX = A.x + t * ABx;
+  const closestY = A.y + t * ABy;
+  const dx = P.x - closestX;
+  const dy = P.y - closestY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
 
 type RidePhase = 'waiting_gps' | 'driver_approaching' | 'pickup_reached' | 'in_transit' | 'arriving' | 'completed';
 
@@ -27,6 +66,7 @@ interface DriverInfo {
 interface RideInfo {
   id: number;
   vehicleId: number;
+  driverId: number | null;
   pickup: { lat: number; lng: number; name: string };
   destination: { lat: number; lng: number; name: string };
   driver: DriverInfo;
@@ -38,6 +78,7 @@ interface RideInfo {
 const DEMO_RIDE: RideInfo = {
   id: 1,
   vehicleId: 1,
+  driverId: null,
   pickup: { lat: 4.0435, lng: 9.6966, name: 'Akwa, Douala' },
   destination: { lat: 4.0186, lng: 9.6942, name: 'Bonanjo, Douala' },
   driver: {
@@ -127,6 +168,7 @@ export default function TrackRide() {
         setRide({
           id: r.id,
           vehicleId: r.vehicle_id || vehicleId,
+          driverId: r.driver_id ?? null,
           pickup: {
             lat: r.pickup_lat ?? DEMO_RIDE.pickup.lat,
             lng: r.pickup_lng ?? DEMO_RIDE.pickup.lng,
@@ -377,6 +419,55 @@ export default function TrackRide() {
     );
   }, [position, userGpsPosition, phase, ride.pickup, ride.destination]);
 
+  // EDEN Trust Score du chauffeur assigné — note, expérience, fiabilité
+  const { trustScore } = useTrustScore(ride.driverId);
+
+  // Veille anti-déviation d'itinéraire : alerte si le véhicule s'écarte
+  // nettement de la ligne pickup→destination pendant le trajet. Calculée en
+  // direct à partir de la position GPS déjà sondée — aucun appel réseau
+  // supplémentaire, aucune donnée persistée. Ne dépend pas de `phase`
+  // (dont le calcul "in_transit" ne couvre que les abords du pickup) : on
+  // définit ici son propre critère "trajet réellement entamé", basé sur la
+  // distance déjà parcourue depuis le pickup et restante vers la destination.
+  const routeAlert = useMemo(() => {
+    if (!position || phase === 'waiting_gps' || phase === 'completed') return null;
+
+    const totalDistance = calculateDistance(
+      ride.pickup.lat, ride.pickup.lng,
+      ride.destination.lat, ride.destination.lng
+    );
+    if (totalDistance < 300) return null; // trajet trop court pour un écart significatif
+
+    const distFromPickup = calculateDistance(
+      position.latitude, position.longitude,
+      ride.pickup.lat, ride.pickup.lng
+    );
+    const distFromDestination = calculateDistance(
+      position.latitude, position.longitude,
+      ride.destination.lat, ride.destination.lng
+    );
+    // Le passager doit être à bord et le trajet réellement entamé : pas
+    // d'alerte pendant l'approche du chauffeur vers le point de prise en
+    // charge, ni une fois quasiment arrivé.
+    const rideUnderway = distFromPickup > 150 && distFromDestination > 200;
+    if (!rideUnderway) return null;
+
+    const perpDistance = perpendicularDistanceToRouteMeters(
+      position.latitude, position.longitude,
+      ride.pickup.lat, ride.pickup.lng,
+      ride.destination.lat, ride.destination.lng
+    );
+    // Marge généreuse : une vraie route n'est jamais une ligne droite.
+    const bufferMeters = Math.max(800, totalDistance * 0.5);
+
+    if (perpDistance > bufferMeters) {
+      return {
+        message: `Le véhicule semble s'écarter du trajet prévu (~${(perpDistance / 1000).toFixed(1)} km). Votre position est partagée en direct par sécurité.`,
+      };
+    }
+    return null;
+  }, [position, phase, ride.pickup, ride.destination]);
+
   // Système de notifications — alerte quand le chauffeur arrive
   // Tient compte de la position GPS réelle de l'utilisateur
   const { permissionGranted, requestPermission } = useRideNotifications({
@@ -594,6 +685,15 @@ export default function TrackRide() {
                     </div>
                     <p className="text-xs text-muted-foreground">{ride.driver.vehicle}</p>
                     <p className="text-xs font-mono text-muted-foreground">{ride.driver.plate}</p>
+                    {trustScore && (
+                      <div className="mt-1.5">
+                        <div className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 rounded-full px-2 py-0.5">
+                          <Shield className="w-3 h-3" />
+                          <span className="text-[10px] font-semibold">EDEN Trust {trustScore.score}/100 · {trustScore.grade}</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{trustScore.factors.join(' · ')}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -651,6 +751,14 @@ export default function TrackRide() {
               />
             </div>
           </div>
+
+          {/* Veille anti-déviation d'itinéraire */}
+          {routeAlert && (
+            <div className="flex items-start gap-2 py-2 px-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-800">{routeAlert.message}</p>
+            </div>
+          )}
 
           {/* Completed state */}
           {phase === 'completed' && (
