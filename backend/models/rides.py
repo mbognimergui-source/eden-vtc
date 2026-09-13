@@ -24,8 +24,10 @@ class Rides(Base):
     final_price = Column(Integer, nullable=True)
     payment_method = Column(String, nullable=True, default='wallet', server_default='wallet')
     payment_status = Column(String, nullable=True, default='pending', server_default='pending')
-    rating = Column(Integer, nullable=True)
+    rating = Column(Integer, nullable=True)  # note du passager sur le chauffeur
     comment = Column(String, nullable=True)
+    passenger_rating = Column(Integer, nullable=True)  # note du chauffeur sur le passager
+    passenger_comment = Column(String, nullable=True)
     is_scheduled = Column(Boolean, nullable=True, default=False, server_default='false')
     scheduled_at = Column(DateTime(timezone=True), nullable=True)
     km_start = Column(Integer, nullable=True)

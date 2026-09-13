@@ -597,11 +597,15 @@ export default function TrackRide() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="icon" variant="outline" className="rounded-full h-10 w-10">
-                    <Phone className="w-4 h-4" />
+                  <Button size="icon" variant="outline" className="rounded-full h-10 w-10" asChild disabled={!ride.driver.phone}>
+                    <a href={`tel:${ride.driver.phone}`} aria-label="Appeler le chauffeur">
+                      <Phone className="w-4 h-4" />
+                    </a>
                   </Button>
-                  <Button size="icon" variant="outline" className="rounded-full h-10 w-10">
-                    <MessageSquare className="w-4 h-4" />
+                  <Button size="icon" variant="outline" className="rounded-full h-10 w-10" asChild disabled={!ride.driver.phone}>
+                    <a href={`sms:${ride.driver.phone}`} aria-label="Envoyer un SMS au chauffeur">
+                      <MessageSquare className="w-4 h-4" />
+                    </a>
                   </Button>
                 </div>
               </div>

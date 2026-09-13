@@ -7,8 +7,8 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-from sqlalchemy import select, update, and_
+from pydantic import BaseModel, Field
+from sqlalchemy import select, update, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
@@ -58,6 +58,12 @@ class DriverPositionUpdate(BaseModel):
     longitude: float
 
 
+class RateRideRequest(BaseModel):
+    """Notation post-course (dans un sens comme dans l'autre)"""
+    rating: int = Field(..., ge=1, le=5)
+    comment: Optional[str] = None
+
+
 # === Utility functions ===
 
 def haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
@@ -87,6 +93,9 @@ def estimate_eta_minutes(distance_km: float) -> float:
 MAX_DEBT_PER_RIDE = 5000
 # Nombre minimum de courses pour bénéficier du crédit (fidélisation)
 MIN_RIDES_FOR_CREDIT = 50
+# Frais forfaitaire (FCFA) si le passager annule une course déjà acceptée
+# par un chauffeur (celui-ci s'était déjà déplacé/engagé)
+CANCELLATION_FEE = 500
 
 # === Zone de service ===
 # Villes desservies : cf. services/service_areas.py. Une ville n'est
@@ -378,7 +387,12 @@ async def get_available_rides(
         if not driver:
             return {"rides": [], "message": "Vous n'êtes pas un chauffeur actif ou vous n'êtes pas en ligne."}
 
-        # Get all pending rides (not yet accepted)
+        # Get all pending rides (not yet accepted). Une course programmée
+        # (is_scheduled=True) ne doit apparaître aux chauffeurs qu'une fois
+        # son heure atteinte — comparaison en heure locale naïve, cohérente
+        # avec `scheduled_at` tel qu'enregistré par create-ride (valeur brute
+        # d'un <input type="datetime-local">, sans fuseau) et avec le même
+        # référentiel que Rides.created_at ailleurs dans ce fichier.
         rides_result = await db.execute(
             select(Rides).where(
                 and_(
@@ -386,6 +400,11 @@ async def get_available_rides(
                     Rides.driver_id.is_(None),
                     Rides.pickup_lat.isnot(None),
                     Rides.pickup_lng.isnot(None),
+                    or_(
+                        Rides.is_scheduled.is_(False),
+                        Rides.is_scheduled.is_(None),
+                        Rides.scheduled_at <= datetime.now(),
+                    ),
                 )
             )
         )
@@ -662,6 +681,9 @@ async def cancel_ride(
     Annuler une course (par le passager avant qu'elle soit acceptée,
     ou par le chauffeur après acceptation).
     """
+    from models.passengers import Passengers
+    from models.wallet_transactions import Wallet_transactions
+
     try:
         ride_result = await db.execute(
             select(Rides).where(Rides.id == ride_id)
@@ -678,6 +700,30 @@ async def cancel_ride(
                 detail="Cette course ne peut plus être annulée."
             )
 
+        # Frais d'annulation : uniquement si un chauffeur s'était déjà engagé
+        # (statut 'accepted') ET que c'est le passager qui annule — pas de
+        # frais si personne n'a encore accepté, ni si c'est le chauffeur qui
+        # annule. Plafonné au solde disponible : jamais de dette créée pour
+        # une annulation.
+        fee_charged = 0
+        passenger_result = await db.execute(
+            select(Passengers).where(Passengers.user_id == current_user.id)
+        )
+        passenger = passenger_result.scalar_one_or_none()
+        is_passenger_cancelling = bool(passenger and passenger.id == ride.passenger_id)
+
+        if ride.status == "accepted" and is_passenger_cancelling:
+            fee_charged = min(CANCELLATION_FEE, passenger.wallet_balance or 0)
+            if fee_charged > 0:
+                passenger.wallet_balance = (passenger.wallet_balance or 0) - fee_charged
+                db.add(Wallet_transactions(
+                    passenger_id=passenger.id,
+                    amount=fee_charged,
+                    type="cancellation_fee",
+                    reference=f"RIDE-{ride_id}",
+                    description=f"Frais d'annulation course #{ride_id}",
+                ))
+
         # If ride was accepted, free the driver
         if ride.driver_id:
             driver_result = await db.execute(
@@ -692,11 +738,16 @@ async def cancel_ride(
 
         logger.info(f"Ride {ride.id} cancelled by user {current_user.id}")
 
+        message = "Course annulée."
+        if fee_charged > 0:
+            message += f" Frais d'annulation de {fee_charged} FCFA débités (chauffeur déjà en route)."
+
         return {
             "success": True,
             "ride_id": ride.id,
             "status": "cancelled",
-            "message": "Course annulée.",
+            "message": message,
+            "cancellation_fee": fee_charged,
         }
     except HTTPException:
         raise
@@ -743,4 +794,107 @@ async def complete_ride(
     except Exception as e:
         await db.rollback()
         logger.error(f"Error completing ride: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
+
+async def _update_driver_average_rating(db: AsyncSession, driver: Drivers, new_rating: int) -> None:
+    """Moyenne pondérée par `driver.total_rides` (nombre de courses déjà
+    effectuées). Si ce compteur est à 0 (jamais incrémenté ou premier avis),
+    la nouvelle note devient directement la note du chauffeur."""
+    previous_count = driver.total_rides or 0
+    previous_rating = driver.rating or 0.0
+    if previous_count <= 0:
+        driver.rating = float(new_rating)
+    else:
+        driver.rating = round((previous_rating * previous_count + new_rating) / (previous_count + 1), 2)
+
+
+@router.post("/rate-ride/{ride_id}")
+async def rate_ride(
+    ride_id: int,
+    data: RateRideRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
+):
+    """Le passager note le chauffeur à l'issue d'une course terminée.
+    Une seule notation par course (ride.rating doit être vide)."""
+    from models.passengers import Passengers
+
+    try:
+        ride_result = await db.execute(select(Rides).where(Rides.id == ride_id))
+        ride = ride_result.scalar_one_or_none()
+        if not ride:
+            raise HTTPException(status_code=404, detail="Course introuvable.")
+
+        passenger_result = await db.execute(
+            select(Passengers).where(Passengers.user_id == current_user.id)
+        )
+        passenger = passenger_result.scalar_one_or_none()
+        if not passenger or passenger.id != ride.passenger_id:
+            raise HTTPException(status_code=403, detail="Cette course ne vous appartient pas.")
+
+        if ride.status != "completed":
+            raise HTTPException(status_code=400, detail="Seule une course terminée peut être notée.")
+
+        if ride.rating is not None:
+            raise HTTPException(status_code=409, detail="Cette course a déjà été notée.")
+
+        ride.rating = data.rating
+        ride.comment = data.comment
+
+        if ride.driver_id:
+            driver_result = await db.execute(select(Drivers).where(Drivers.id == ride.driver_id))
+            driver = driver_result.scalar_one_or_none()
+            if driver:
+                await _update_driver_average_rating(db, driver, data.rating)
+
+        await db.commit()
+
+        return {"success": True, "ride_id": ride.id, "rating": ride.rating}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error rating ride {ride_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
+
+@router.post("/rate-passenger/{ride_id}")
+async def rate_passenger(
+    ride_id: int,
+    data: RateRideRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserResponse = Depends(get_current_user),
+):
+    """Le chauffeur assigné note le passager à l'issue d'une course terminée.
+    Une seule notation par course (ride.passenger_rating doit être vide)."""
+    try:
+        ride_result = await db.execute(select(Rides).where(Rides.id == ride_id))
+        ride = ride_result.scalar_one_or_none()
+        if not ride:
+            raise HTTPException(status_code=404, detail="Course introuvable.")
+
+        driver_result = await db.execute(
+            select(Drivers).where(Drivers.user_id == current_user.id)
+        )
+        driver = driver_result.scalar_one_or_none()
+        if not driver or driver.id != ride.driver_id:
+            raise HTTPException(status_code=403, detail="Cette course ne vous a pas été assignée.")
+
+        if ride.status != "completed":
+            raise HTTPException(status_code=400, detail="Seule une course terminée peut être notée.")
+
+        if ride.passenger_rating is not None:
+            raise HTTPException(status_code=409, detail="Ce passager a déjà été noté pour cette course.")
+
+        ride.passenger_rating = data.rating
+        ride.passenger_comment = data.comment
+        await db.commit()
+
+        return {"success": True, "ride_id": ride.id, "passenger_rating": ride.passenger_rating}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error rating passenger for ride {ride_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
