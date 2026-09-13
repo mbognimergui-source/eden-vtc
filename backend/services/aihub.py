@@ -90,12 +90,18 @@ class AIHubService:
 
     def __init__(self):
         self.client: Optional["AsyncOpenAI"] = None
-        if settings.app_ai_base_url and settings.app_ai_key:
+        # `settings` reads undeclared keys dynamically from the environment and
+        # raises AttributeError when they're absent (see core/config.py) — use
+        # getattr with a default so an unconfigured AI provider degrades to
+        # `self.client = None` instead of crashing every AI Hub call.
+        base_url = getattr(settings, "app_ai_base_url", None)
+        api_key = getattr(settings, "app_ai_key", None)
+        if base_url and api_key:
             from openai import AsyncOpenAI
 
             self.client = AsyncOpenAI(
-                api_key=settings.app_ai_key,
-                base_url=settings.app_ai_base_url.rstrip("/"),
+                api_key=api_key,
+                base_url=base_url.rstrip("/"),
             )
 
     def _require_ai_client(self) -> "AsyncOpenAI":

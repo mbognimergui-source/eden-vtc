@@ -56,6 +56,20 @@ async def get_current_user(token: str = Depends(get_bearer_token)) -> UserRespon
     )
 
 
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+) -> Optional[UserResponse]:
+    """Like `get_current_user`, but returns None instead of raising 401 when no
+    (or an invalid) token is presented. For endpoints usable both logged-out
+    and logged-in, where being authenticated only unlocks extra context."""
+    if not credentials or credentials.scheme.lower() != "bearer":
+        return None
+    try:
+        return await get_current_user(credentials.credentials)
+    except HTTPException:
+        return None
+
+
 async def get_admin_user(current_user: UserResponse = Depends(get_current_user)) -> UserResponse:
     """Dependency to ensure current user has admin role."""
     if current_user.role != "admin":
