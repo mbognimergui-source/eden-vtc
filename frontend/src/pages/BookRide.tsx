@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +19,7 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { useCountryTariff } from '@/hooks/useCountryTariff';
 import { useTrafficData } from '@/hooks/useTrafficData';
 import { EDEN_CITIES, haversineDistance, reverseGeocode, getPositionWithFallback } from '@/lib/geolocation';
-import { nearbyNeighborhoods } from '@/lib/neighborhoods';
+import { useNearbyDestinations } from '@/hooks/useNearbyDestinations';
 import BottomNav from '@/components/BottomNav';
 import { useRideStatus, requestNotificationPermission } from '@/hooks/useRideStatus';
 import { useNearbyDrivers } from '@/hooks/useNearbyDrivers';
@@ -103,16 +103,17 @@ export default function BookRide() {
     ? { lat: location.lat, lng: location.lng }
     : { lat: 4.0511, lng: 9.7679 };
 
-  // Quartiers de Douala à moins de 10 km du point de départ (ou du centre-ville
-  // tant que le départ n'est pas encore connu), proposés comme destinations
-  // rapides sous le champ Destination.
+  // Quartiers/localités à moins de 15 km du point de départ (ou du
+  // centre-ville tant que le départ n'est pas encore connu), proposés comme
+  // destinations rapides sous le champ Destination — n'importe où, pas
+  // seulement dans les villes pour lesquelles EDEN VTC a une liste maison
+  // (cf. hooks/useNearbyDestinations.ts).
   const NEARBY_DESTINATION_RADIUS_KM = 15;
-  const nearbyDestinations = useMemo(() => {
-    const centerLat = pickupCoords?.lat ?? cityCenter.lat;
-    const centerLng = pickupCoords?.lng ?? cityCenter.lng;
-    return nearbyNeighborhoods(centerLat, centerLng, NEARBY_DESTINATION_RADIUS_KM);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickupCoords?.lat, pickupCoords?.lng, cityCenter.lat, cityCenter.lng]);
+  const { destinations: nearbyDestinations, loading: loadingNearbyDestinations } = useNearbyDestinations({
+    lat: pickupCoords?.lat ?? cityCenter.lat,
+    lng: pickupCoords?.lng ?? cityCenter.lng,
+    radiusKm: NEARBY_DESTINATION_RADIUS_KM,
+  });
 
   // Chauffeurs EDEN VTC réellement en ligne à moins de 3 km du point de
   // départ, affichés sur la carte tant que la course n'est pas encore
@@ -587,30 +588,35 @@ export default function BookRide() {
                     }}
                   />
                 </div>
-                {nearbyDestinations.length > 0 && (
+                {loadingNearbyDestinations ? (
+                  <p className="text-xs text-muted-foreground pt-1">Recherche des quartiers à proximité...</p>
+                ) : nearbyDestinations.length > 0 ? (
                   <div className="space-y-1.5 pt-1">
                     <p className="text-xs text-muted-foreground">
                       {nearbyDestinations.length} quartier{nearbyDestinations.length > 1 ? 's' : ''} à moins de {NEARBY_DESTINATION_RADIUS_KM} km
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {nearbyDestinations.map((n) => (
-                        <Button
-                          key={n.name}
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className={`h-7 rounded-full text-xs px-3 ${destination === `${n.name}, Douala` ? 'border-[hsl(195,50%,25%)] bg-[hsl(195,50%,25%)]/10' : ''}`}
-                          onClick={() => {
-                            setDestination(`${n.name}, Douala`);
-                            setDestCoords({ lat: n.lat, lng: n.lng });
-                          }}
-                        >
-                          {n.name} · {n.distanceKm.toFixed(1)} km
-                        </Button>
-                      ))}
+                      {nearbyDestinations.map((n) => {
+                        const label = location?.city ? `${n.name}, ${location.city}` : n.name;
+                        return (
+                          <Button
+                            key={n.name}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className={`h-7 rounded-full text-xs px-3 ${destination === label ? 'border-[hsl(195,50%,25%)] bg-[hsl(195,50%,25%)]/10' : ''}`}
+                            onClick={() => {
+                              setDestination(label);
+                              setDestCoords({ lat: n.lat, lng: n.lng });
+                            }}
+                          >
+                            {n.name} · {n.distanceKm.toFixed(1)} km
+                          </Button>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
 
               {/* Schedule toggle */}
