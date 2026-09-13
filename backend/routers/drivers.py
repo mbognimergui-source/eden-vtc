@@ -9,9 +9,16 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from dependencies.auth import get_current_user
+from dependencies.auth import get_admin_user, get_current_user
 from schemas.auth import UserResponse
 from services.drivers import DriversService
+from services.phone_auth import normalize_phone, user_id_for_phone, PhoneAuthError
+
+# Champs qu'un chauffeur peut modifier lui-même sur SA PROPRE fiche (statut
+# en ligne/hors ligne, déclenché par le bouton bascule du tableau de bord).
+# Tout le reste (salaire, note, véhicule assigné, user_id, ...) est une
+# donnée RH/flotte réservée aux administrateurs.
+DRIVER_SELF_EDITABLE_FIELDS = {"status"}
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -165,7 +172,7 @@ async def query_driverss_all(
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     # Query driverss with filtering, sorting, and pagination without user limitation
     logger.debug(f"Querying driverss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
@@ -227,14 +234,30 @@ async def get_drivers(
 async def create_drivers(
     data: DriversData,
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
-    """Create a new drivers"""
+    """Create a new drivers (admin only — fleet/HR data)."""
     logger.debug(f"Creating new drivers with data: {data}")
-    
+
     service = DriversService(db)
     try:
-        result = await service.create(data.model_dump())
+        create_data = data.model_dump()
+        # Relie automatiquement la fiche chauffeur au compte applicatif : le
+        # même identifiant déterministe que l'authentification par téléphone
+        # (services.phone_auth.user_id_for_phone) est dérivé ici à partir du
+        # numéro saisi par l'administrateur. Dès que ce numéro se connecte
+        # par OTP, il retrouve automatiquement SA fiche chauffeur — aucune
+        # étape de liaison manuelle supplémentaire n'est nécessaire. Un
+        # user_id fourni explicitement par l'appelant reste prioritaire.
+        if not create_data.get("user_id") and create_data.get("phone"):
+            try:
+                create_data["user_id"] = user_id_for_phone(normalize_phone(create_data["phone"]))
+            except PhoneAuthError:
+                # Numéro dans un format non reconnu par la normalisation E.164 :
+                # on laisse la fiche sans lien de compte plutôt que d'échouer
+                # la création — un admin pourra corriger le numéro ensuite.
+                pass
+        result = await service.create(create_data)
         if not result:
             raise HTTPException(status_code=400, detail="Failed to create drivers")
         
@@ -252,7 +275,7 @@ async def create_drivers(
 async def create_driverss_batch(
     request: DriversBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Create multiple driverss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} driverss")
@@ -278,7 +301,7 @@ async def create_driverss_batch(
 async def update_driverss_batch(
     request: DriversBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Update multiple driverss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} driverss")
@@ -309,13 +332,39 @@ async def update_drivers(
     db: AsyncSession = Depends(get_db),
     current_user: UserResponse = Depends(get_current_user),
 ):
-    """Update an existing drivers"""
+    """Update an existing drivers.
+
+    Un administrateur peut modifier n'importe quel champ de n'importe quel
+    chauffeur. Un chauffeur ne peut modifier que SA PROPRE fiche, et
+    uniquement les champs de DRIVER_SELF_EDITABLE_FIELDS (le statut en
+    ligne/hors ligne) — pas son salaire, sa note, son véhicule assigné, ni
+    surtout le user_id qui relie la fiche à son compte."""
     logger.debug(f"Updating drivers {id} with data: {data}")
 
     service = DriversService(db)
     try:
         # Only include non-None values for partial updates
         update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
+
+        if current_user.role != "admin":
+            existing = await service.get_by_id(id)
+            if not existing:
+                raise HTTPException(status_code=404, detail="Drivers not found")
+            if getattr(existing, "user_id", None) != current_user.id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Vous ne pouvez modifier que votre propre fiche chauffeur.",
+                )
+            disallowed = set(update_dict) - DRIVER_SELF_EDITABLE_FIELDS
+            if disallowed:
+                raise HTTPException(
+                    status_code=403,
+                    detail=(
+                        "Un chauffeur ne peut modifier que son statut (en ligne/hors ligne). "
+                        f"Champ(s) non autorisé(s) : {', '.join(sorted(disallowed))}."
+                    ),
+                )
+
         result = await service.update(id, update_dict)
         if not result:
             logger.warning(f"Drivers with id {id} not found for update")
@@ -337,7 +386,7 @@ async def update_drivers(
 async def delete_driverss_batch(
     request: DriversBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Delete multiple driverss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} driverss")
@@ -363,7 +412,7 @@ async def delete_driverss_batch(
 async def delete_drivers(
     id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_admin_user),
 ):
     """Delete a single drivers by ID"""
     logger.debug(f"Deleting drivers with id: {id}")

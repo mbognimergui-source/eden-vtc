@@ -10,9 +10,10 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { client } from '@/lib/client';
 import { t } from '@/lib/i18n';
-import { ArrowLeft, Car, Zap, MapPin, TrendingUp, Battery, Navigation, Clock, Loader2 } from 'lucide-react';
+import { ArrowLeft, Car, Zap, MapPin, TrendingUp, Battery, Navigation, Clock, Loader2, UserX } from 'lucide-react';
 import { useCountryTariff } from '@/hooks/useCountryTariff';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import DriverTTSNotification from '@/components/DriverTTSNotification';
 import { useRideDispatch, AvailableRide } from '@/hooks/useRideDispatch';
 
@@ -20,10 +21,13 @@ export default function DriverDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { formatPrice, tariff } = useCountryTariff();
+  const { user: authUser, loading: authLoading } = useAuth();
   const [driver, setDriver] = useState<any>(null);
   const [vehicle, setVehicle] = useState<any>(null);
-  const [todayRides, setTodayRides] = useState<any[]>([]);
+  const [recentRides, setRecentRides] = useState<any[]>([]);
   const [isOnline, setIsOnline] = useState(false);
+  const [loadingDriver, setLoadingDriver] = useState(true);
+  const [noDriverProfile, setNoDriverProfile] = useState(false);
   const [rechargeStation, setRechargeStation] = useState('');
   const [rechargeKwh, setRechargeKwh] = useState('');
   const [rechargeCost, setRechargeCost] = useState('');
@@ -39,31 +43,55 @@ export default function DriverDashboard() {
   });
 
   useEffect(() => {
-    loadDriverData();
-  }, []);
+    if (authLoading) return;
+    if (!authUser?.id) {
+      setLoadingDriver(false);
+      return;
+    }
+    loadDriverData(authUser.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, authUser?.id]);
 
-  const loadDriverData = async () => {
+  const loadDriverData = async (userId: string) => {
+    setLoadingDriver(true);
     try {
-      const dRes = await client.entities.drivers.query({ query: {}, limit: 1 });
-      if (dRes?.data?.items?.length > 0) {
-        const d = dRes.data.items[0];
-        setDriver(d);
-        setIsOnline(d.status === 'online' || d.status === 'on_ride');
+      // Scopé au compte connecté : sans ce filtre, TOUS les chauffeurs
+      // voyaient la même première fiche de la base (gains, véhicule et
+      // historique d'un autre chauffeur), quel que soit leur propre compte.
+      const dRes = await client.entities.drivers.query({
+        query: { user_id: userId },
+        limit: 1,
+      });
+      const d = dRes?.data?.items?.[0];
 
-        if (d.vehicle_id) {
-          const vRes = await client.entities.vehicles.get({ id: String(d.vehicle_id) });
-          if (vRes?.data) setVehicle(vRes.data);
-        }
+      if (!d) {
+        setNoDriverProfile(true);
+        setLoadingDriver(false);
+        return;
       }
 
-      // Load today's rides
-      const rRes = await client.entities.rides.query({ query: {}, sort: '-created_at', limit: 20 });
+      setNoDriverProfile(false);
+      setDriver(d);
+      setIsOnline(d.status === 'online' || d.status === 'on_ride');
+
+      if (d.vehicle_id) {
+        const vRes = await client.entities.vehicles.get({ id: String(d.vehicle_id) });
+        if (vRes?.data) setVehicle(vRes.data);
+      }
+
+      // Historique de CE chauffeur uniquement, pas de toute la flotte.
+      const rRes = await client.entities.rides.query({
+        query: { driver_id: d.id },
+        sort: '-created_at',
+        limit: 50,
+      });
       if (rRes?.data?.items) {
-        setTodayRides(rRes.data.items);
+        setRecentRides(rRes.data.items);
       }
     } catch (e) {
       console.error('Failed to load driver data', e);
     }
+    setLoadingDriver(false);
   };
 
   const toggleOnline = async () => {
@@ -112,7 +140,14 @@ export default function DriverDashboard() {
 
   const earnings = driver?.daily_earnings || 0;
   const progressPercent = Math.min((earnings / dailyTarget) * 100, 100);
-  const completedRides = todayRides.filter(r => r.status === 'completed').length;
+
+  const isToday = (isoDate?: string) => {
+    if (!isoDate) return false;
+    const d = new Date(isoDate);
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+  };
+  const todaysCompletedRides = recentRides.filter(r => r.status === 'completed' && isToday(r.created_at)).length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -124,13 +159,36 @@ export default function DriverDashboard() {
             </button>
             <h1 className="text-lg font-semibold">{t('driver.dashboard')}</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{isOnline ? t('driver.online') : t('driver.offline')}</span>
-            <Switch checked={isOnline} onCheckedChange={toggleOnline} />
-          </div>
+          {driver && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">{isOnline ? t('driver.online') : t('driver.offline')}</span>
+              <Switch checked={isOnline} onCheckedChange={toggleOnline} />
+            </div>
+          )}
         </div>
       </header>
 
+      {(authLoading || loadingDriver) && (
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin text-[hsl(195,50%,25%)]" />
+        </div>
+      )}
+
+      {!authLoading && !loadingDriver && noDriverProfile && (
+        <main className="max-w-2xl mx-auto px-4 py-16 text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-muted/60 flex items-center justify-center mx-auto">
+            <UserX className="w-8 h-8 text-muted-foreground/50" />
+          </div>
+          <h2 className="font-semibold text-lg">Aucune fiche chauffeur associée à votre compte</h2>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+            Un administrateur EDEN VTC doit créer votre profil chauffeur (avec votre numéro de téléphone)
+            avant que vous puissiez accepter des courses. Contactez votre administrateur.
+          </p>
+          <Button variant="outline" onClick={() => navigate('/')}>Retour à l'accueil</Button>
+        </main>
+      )}
+
+      {!authLoading && !loadingDriver && !noDriverProfile && (
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Status Badge */}
         <div className="flex items-center gap-2">
@@ -167,8 +225,8 @@ export default function DriverDashboard() {
           <Card>
             <CardContent className="p-4 text-center">
               <Car className="w-6 h-6 mx-auto text-[hsl(195,50%,25%)] mb-1" />
-              <p className="text-2xl font-bold">{completedRides}</p>
-              <p className="text-xs text-muted-foreground">Courses</p>
+              <p className="text-2xl font-bold">{todaysCompletedRides}</p>
+              <p className="text-xs text-muted-foreground">Courses aujourd'hui</p>
             </CardContent>
           </Card>
           <Card>
@@ -334,17 +392,17 @@ export default function DriverDashboard() {
         {/* TTS Notifications */}
         <DriverTTSNotification />
 
-        {/* Today's Rides */}
+        {/* Recent Rides */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{t('driver.today_rides')}</CardTitle>
           </CardHeader>
           <CardContent>
-            {todayRides.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">Aucune course aujourd'hui</p>
+            {recentRides.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">Aucune course pour le moment</p>
             ) : (
               <div className="space-y-3">
-                {todayRides.slice(0, 5).map((ride) => (
+                {recentRides.slice(0, 5).map((ride) => (
                   <div key={ride.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div className="flex items-center gap-2">
                       <Navigation className="w-4 h-4 text-[hsl(195,50%,25%)]" />
@@ -364,6 +422,7 @@ export default function DriverDashboard() {
           </CardContent>
         </Card>
       </main>
+      )}
     </div>
   );
 }
