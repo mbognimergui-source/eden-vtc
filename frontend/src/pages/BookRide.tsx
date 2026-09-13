@@ -100,8 +100,11 @@ export default function BookRide() {
       if (data.driver) {
         setDriverCoords(null); // Will be set by tracking page
       }
+      const vehicleId = data.vehicle_id ?? data.driver?.vehicle_id;
+      const params = new URLSearchParams({ ride_id: String(data.ride_id) });
+      if (vehicleId) params.set('vehicle_id', String(vehicleId));
       setTimeout(() => {
-        navigate('/track');
+        navigate(`/track?${params.toString()}`);
       }, 2000);
     },
   });

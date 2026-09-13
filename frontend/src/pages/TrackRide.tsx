@@ -11,6 +11,7 @@ import SharePosition from '@/components/SharePosition';
 import { useVehicleTracking } from '@/hooks/useVehicleTracking';
 import { useRideNotifications } from '@/hooks/useRideNotifications';
 import { reverseGeocode } from '@/lib/geolocation';
+import { client } from '@/lib/client';
 
 type RidePhase = 'waiting_gps' | 'driver_approaching' | 'pickup_reached' | 'in_transit' | 'arriving' | 'completed';
 
@@ -78,11 +79,76 @@ export default function TrackRide() {
 
   const [phase, setPhase] = useState<RidePhase>('waiting_gps');
   const [followDriver, setFollowDriver] = useState(true);
-  const [ride] = useState<RideInfo>(DEMO_RIDE);
+  const [ride, setRide] = useState<RideInfo>(DEMO_RIDE);
   const [showArrivalBanner, setShowArrivalBanner] = useState(false);
   const [userGpsPosition, setUserGpsPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [userLocationName, setUserLocationName] = useState<string>('votre position');
   const lastGeocodedRef = useRef<string>('');
+
+  // Charger les vraies infos de la course (chauffeur, véhicule, trajet) via
+  // rideId. Sans ça, l'écran affichait toujours DEMO_RIDE (Jean-Paul M.,
+  // Akwa → Bonanjo, 2500 FCFA) quelle que soit la course réellement assignée.
+  useEffect(() => {
+    if (!rideId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const rideRes = await client.entities.rides.get({ id: String(rideId) });
+        const r = rideRes?.data;
+        if (!r || cancelled) return;
+
+        let driverInfo: DriverInfo = DEMO_RIDE.driver;
+        if (r.driver_id) {
+          try {
+            const [driverRes, vehicleRes] = await Promise.all([
+              client.entities.drivers.get({ id: String(r.driver_id) }),
+              r.vehicle_id ? client.entities.vehicles.get({ id: String(r.vehicle_id) }) : Promise.resolve(null),
+            ]);
+            const d = driverRes?.data;
+            const v = vehicleRes?.data;
+            if (d) {
+              driverInfo = {
+                name: `${d.first_name} ${d.last_name?.[0] ? d.last_name[0] + '.' : ''}`.trim(),
+                photo: '👨🏾‍✈️',
+                rating: d.rating ?? 5,
+                vehicle: v ? `${v.brand} ${v.model}` : DEMO_RIDE.driver.vehicle,
+                plate: v?.license_plate || DEMO_RIDE.driver.plate,
+                phone: d.phone || '',
+              };
+            }
+          } catch (e) {
+            console.error('Failed to load driver/vehicle for ride', e);
+          }
+        }
+
+        if (cancelled) return;
+        setRide({
+          id: r.id,
+          vehicleId: r.vehicle_id || vehicleId,
+          pickup: {
+            lat: r.pickup_lat ?? DEMO_RIDE.pickup.lat,
+            lng: r.pickup_lng ?? DEMO_RIDE.pickup.lng,
+            name: r.pickup_address || DEMO_RIDE.pickup.name,
+          },
+          destination: {
+            lat: r.destination_lat ?? DEMO_RIDE.destination.lat,
+            lng: r.destination_lng ?? DEMO_RIDE.destination.lng,
+            name: r.destination_address || DEMO_RIDE.destination.name,
+          },
+          driver: driverInfo,
+          price: r.final_price ?? r.estimated_price ?? DEMO_RIDE.price,
+          distance: r.distance_km ?? DEMO_RIDE.distance,
+        });
+      } catch (e) {
+        console.error('Failed to load ride details', e);
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rideId]);
 
   // Obtenir la position GPS réelle de l'utilisateur (PAS le pickup fixe comme fallback)
   useEffect(() => {

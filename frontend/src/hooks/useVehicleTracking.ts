@@ -55,9 +55,17 @@ export function useVehicleTracking({
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const failCountRef = useRef(0);
+  // Identifie la cible suivie au moment de la requête : si vehicleId/rideId
+  // change pendant qu'une requête est en vol (nouveau chauffeur assigné,
+  // changement de course), une réponse tardive pour l'ANCIENNE cible ne doit
+  // pas écraser la position affichée pour la cible actuelle.
+  const targetRef = useRef<string>('');
 
   const fetchPosition = useCallback(async () => {
     if (!vehicleId && !rideId) return;
+
+    const target = `ride:${rideId ?? ''}|vehicle:${vehicleId ?? ''}`;
+    targetRef.current = target;
 
     const url = rideId
       ? `/api/v1/gps/ride-position/${rideId}`
@@ -66,7 +74,7 @@ export function useVehicleTracking({
     try {
       const response = await client.apiCall.invoke({ url, method: 'GET' });
 
-      if (response?.data) {
+      if (response?.data && targetRef.current === target) {
         // On conserve la position antérieure via l'updater d'état afin de ne
         // pas recréer cette callback à chaque rafraîchissement.
         setPosition((prev) => {
