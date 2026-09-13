@@ -112,7 +112,7 @@ export default function SetupAccess() {
       if (res?.data?.success) {
         toast({
           title: '✅ Rôles attribués',
-          description: 'Vous avez maintenant accès à tous les espaces : Client, Chauffeur et Administrateur.',
+          description: 'Vous avez maintenant accès aux espaces Client et Chauffeur.',
         });
         await fetchRoles();
       }
@@ -128,23 +128,33 @@ export default function SetupAccess() {
   };
 
   const handleAssignSingleRole = async (role: string) => {
+    // Le rôle administrateur ne peut pas être auto-attribué (voir
+    // routers/access_management.py) : le premier utilisateur du système
+    // passe par /init-admin, les suivants doivent être promus par un
+    // administrateur déjà en place.
+    const isAdminRole = role === 'admin';
     try {
       setAssigningSingle(role);
       const res = await client.apiCall.invoke({
-        url: `/api/v1/access/assign-single-role?role=${role}`,
+        url: isAdminRole ? '/api/v1/access/init-admin' : `/api/v1/access/assign-single-role?role=${role}`,
         method: 'POST',
       });
       if (res?.data?.success) {
         toast({
           title: '✅ Rôle activé',
-          description: `Le rôle "${role}" a été activé avec succès.`,
+          description: isAdminRole
+            ? 'Vous êtes le premier utilisateur : le rôle administrateur vous a été attribué.'
+            : `Le rôle "${role}" a été activé avec succès.`,
         });
         await fetchRoles();
       }
     } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.data?.detail;
       toast({
         title: '❌ Erreur',
-        description: err?.message || `Impossible d'activer le rôle "${role}".`,
+        description: isAdminRole
+          ? (detail || 'Un administrateur existe déjà. Demandez-lui de vous accorder cet accès.')
+          : (detail || err?.message || `Impossible d'activer le rôle "${role}".`),
         variant: 'destructive',
       });
     } finally {
@@ -237,10 +247,10 @@ export default function SetupAccess() {
               <Sparkles className="w-8 h-8 text-[hsl(45,65%,47%)] mx-auto" />
               <div>
                 <h3 className="font-semibold text-[hsl(195,50%,25%)]">
-                  Activer tous les rôles en un clic
+                  Activer les rôles Client et Chauffeur
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Obtenez l'accès Client + Chauffeur + Administrateur instantanément
+                  Obtenez l'accès Client + Chauffeur instantanément. L'accès Administrateur se demande séparément ci-dessous.
                 </p>
               </div>
               <Button

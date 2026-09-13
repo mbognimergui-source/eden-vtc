@@ -304,20 +304,30 @@ async def initialize_first_admin(
     }
 
 
+# Rôles qu'un utilisateur peut s'attribuer lui-même sans validation d'un
+# administrateur. "admin" est volontairement exclu : le self-service illimité
+# permettait auparavant à n'importe quel utilisateur authentifié de devenir
+# administrateur (POST /assign-single-role?role=admin, sans aucune vérification),
+# et setup-all-roles l'incluait systématiquement — une élévation de privilèges
+# triviale. Devenir administrateur passe désormais uniquement par /init-admin
+# (le tout premier utilisateur, tant qu'aucun admin n'existe) ou par l'octroi
+# explicite d'un administrateur déjà en place via /assign-role.
+SELF_SERVICE_ROLES = ("passenger", "driver")
+
+
 @router.post("/setup-all-roles")
 async def setup_all_roles(
     current_user: UserResponse = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Assign all three roles (passenger, driver, admin) to the current user.
-    Useful for testing/demo purposes so the user can access all interfaces.
-    Reactivates existing inactive roles instead of creating duplicates.
+    Assign the passenger and driver roles to the current user, so they can
+    try both interfaces. Reactivates existing inactive roles instead of
+    creating duplicates. Does NOT grant admin — see SELF_SERVICE_ROLES.
     """
-    roles_to_assign = ["passenger", "driver", "admin"]
     assigned = []
 
-    for role_name in roles_to_assign:
+    for role_name in SELF_SERVICE_ROLES:
         # Check if user already has this role
         stmt = select(User_roles).where(
             User_roles.user_id == current_user.id,
@@ -334,13 +344,12 @@ async def setup_all_roles(
             else:
                 assigned.append({"role": role_name, "status": "already_active"})
         else:
-            permissions = '{"full_access": true}' if role_name == "admin" else "{}"
             new_role = User_roles(
                 user_id=current_user.id,
                 role=role_name,
                 is_active=True,
                 granted_by=current_user.id,
-                permissions=permissions,
+                permissions="{}",
             )
             db.add(new_role)
             assigned.append({"role": role_name, "status": "created"})
@@ -349,7 +358,7 @@ async def setup_all_roles(
 
     return {
         "success": True,
-        "message": "Tous les rôles ont été attribués avec succès",
+        "message": "Les rôles Client et Chauffeur ont été attribués avec succès",
         "user_id": current_user.id,
         "roles": assigned,
     }
@@ -362,11 +371,19 @@ async def assign_single_role_to_self(
     role: str = "passenger",
 ):
     """
-    Assign a single role to the current user (self-service for demo/test).
-    Accepts: passenger, driver, admin.
+    Assign a single role to the current user (self-service demo convenience).
+    Accepts: passenger, driver. Admin cannot be self-assigned — see
+    SELF_SERVICE_ROLES and /init-admin.
     """
-    if role not in ("passenger", "driver", "admin"):
-        raise HTTPException(status_code=400, detail="Rôle invalide. Valeurs acceptées : passenger, driver, admin")
+    if role not in SELF_SERVICE_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Le rôle administrateur ne peut pas être auto-attribué. "
+                "Utilisez /init-admin si aucun administrateur n'existe encore, "
+                "ou demandez l'accès à un administrateur déjà en place."
+            ),
+        )
 
     stmt = select(User_roles).where(
         User_roles.user_id == current_user.id,
@@ -383,13 +400,12 @@ async def assign_single_role_to_self(
             return {"success": True, "role": role, "status": "reactivated"}
         return {"success": True, "role": role, "status": "already_active"}
 
-    permissions = '{"full_access": true}' if role == "admin" else "{}"
     new_role = User_roles(
         user_id=current_user.id,
         role=role,
         is_active=True,
         granted_by=current_user.id,
-        permissions=permissions,
+        permissions="{}",
     )
     db.add(new_role)
     await db.commit()

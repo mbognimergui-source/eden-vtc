@@ -88,10 +88,46 @@ app = FastAPI(
 )
 
 
+def _build_allowed_origins() -> list[str]:
+    """Liste explicite des origines autorisées en CORS.
+
+    `allow_origin_regex=r".*"` combiné à `allow_credentials=True` (config
+    précédente) reflète l'Origin de n'importe quel site vers le navigateur
+    avec Access-Control-Allow-Credentials: true — n'importe quel site tiers
+    peut donc lire les réponses de requêtes authentifiées envoyées par un
+    navigateur ayant une session ouverte. On restreint donc explicitement
+    aux origines connues : les ports de dev locaux, FRONTEND_URL (déjà
+    utilisé ailleurs pour les redirections), et ALLOWED_DOMAINS
+    (déjà documenté dans routers/settings.py) pour les domaines de
+    production supplémentaires (Vercel, domaine personnalisé, ...).
+    """
+    origins = {
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+    }
+
+    frontend_url = getattr(settings, "frontend_url", None)
+    if frontend_url:
+        origins.add(frontend_url.rstrip("/"))
+
+    extra_domains = os.environ.get("ALLOWED_DOMAINS") or ""
+    for domain in extra_domains.split(","):
+        domain = domain.strip()
+        if not domain:
+            continue
+        if not domain.startswith("http://") and not domain.startswith("https://"):
+            domain = f"https://{domain}"
+        origins.add(domain.rstrip("/"))
+
+    return sorted(origins)
+
+
 # MODULE_MIDDLEWARE_START
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r".*",
+    allow_origins=_build_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -231,8 +267,23 @@ async def serve_frontend(full_path: str):
 
     from fastapi.responses import FileResponse
 
-    candidate = os.path.join(_FRONTEND_DIST, full_path) if full_path else None
-    if candidate and os.path.isfile(candidate):
+    # Défense en profondeur contre la traversée de répertoire : le
+    # middleware de sécurité bloque déjà les motifs "../" explicites dans le
+    # chemin de requête, mais on ne veut pas dépendre uniquement d'un filtre
+    # par expression régulière pour un handler qui, sinon, servirait
+    # n'importe quel fichier lisible par le processus. On résout le chemin
+    # réel et on vérifie qu'il reste bien sous _FRONTEND_DIST avant de le
+    # servir, quelle que soit la façon dont "full_path" a été construit.
+    dist_root = os.path.realpath(_FRONTEND_DIST)
+    candidate = os.path.realpath(os.path.join(_FRONTEND_DIST, full_path)) if full_path else None
+    is_within_dist = False
+    if candidate:
+        try:
+            is_within_dist = os.path.commonpath([dist_root, candidate]) == dist_root
+        except ValueError:
+            # Chemins sur des lecteurs différents (Windows) : jamais "sous" dist_root.
+            is_within_dist = False
+    if candidate and is_within_dist and os.path.isfile(candidate):
         return FileResponse(candidate)
 
     index_path = os.path.join(_FRONTEND_DIST, "index.html")
