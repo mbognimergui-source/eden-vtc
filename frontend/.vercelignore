@@ -1,0 +1,7 @@
+# requirements.txt/requirements.default here are leftover template metadata
+# (npm-style "pkg@version" entries, not real Python deps) that trick Vercel's
+# zero-config detection into also running a Python build step. Excluded from
+# the deploy rather than deleted, since another part of the original project
+# template may still read them.
+requirements.txt
+requirements.default
